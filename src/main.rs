@@ -27,7 +27,7 @@ fn main() {
     }
 
     let window = video_subsystem
-        .window("SDL", 640, 480)
+        .window("SDL", 900, 480)
         .opengl()
         .position_centered()
         .resizable()
@@ -233,7 +233,7 @@ fn main() {
         let ui = imgui.frame();
         use imgui::im_str;
         imgui::Window::new(im_str!("Information"))
-            .size([300.0, 200.0], imgui::Condition::FirstUseEver)
+            .size([300.0, 300.0], imgui::Condition::FirstUseEver)
             .build(&ui, || {
                 ui.text(im_str!("OpenGL Test App ver 1.0"));
 
