@@ -30,6 +30,7 @@ fn main() {
         .window("SDL", 640, 480)
         .opengl()
         .position_centered()
+        .resizable()
         .build()
         .unwrap();
     println!("OK: init window '{}'", window.title());
@@ -42,10 +43,60 @@ fn main() {
     println!("OK: shader program");
 
     #[rustfmt::skip]
-    let vertex_buffer: [f32; 9] = [
-        -1.0, -1.0,  0.0,
-         1.0, -1.0,  0.0,
-         0.0,  1.0,  0.0,
+    let vertex_buffer: [f32; 108] = [
+        // 1
+        0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0,
+
+        0.0, 0.0, 0.0, 
+        1.0, 1.0, 0.0, 
+        1.0, 0.0, 0.0, 
+
+        // 2
+        0.0, 0.0, 1.0, 
+        0.0, 0.0, 0.0, 
+        1.0, 0.0, 0.0, 
+
+        0.0, 0.0, 1.0, 
+        1.0, 0.0, 0.0, 
+        1.0, 0.0, 1.0, 
+
+        // 3
+        0.0, 1.0, 1.0, 
+        0.0, 0.0, 1.0, 
+        1.0, 0.0, 1.0, 
+
+        0.0, 1.0, 1.0, 
+        1.0, 0.0, 1.0, 
+        1.0, 1.0, 1.0, 
+
+        // 4
+        0.0, 1.0, 0.0, 
+        0.0, 1.0, 1.0, 
+        1.0, 1.0, 1.0, 
+
+        0.0, 1.0, 0.0, 
+        1.0, 1.0, 1.0, 
+        1.0, 1.0, 0.0, 
+
+        // 5
+        1.0, 0.0, 1.0, 
+        1.0, 0.0, 0.0, 
+        1.0, 1.0, 0.0, 
+
+        1.0, 0.0, 1.0, 
+        1.0, 1.0, 0.0, 
+        1.0, 1.0, 1.0, 
+
+        // 6
+        0.0, 1.0, 1.0, 
+        0.0, 1.0, 0.0, 
+        0.0, 0.0, 0.0, 
+
+        0.0, 1.0, 1.0, 
+        0.0, 0.0, 0.0, 
+        0.0, 0.0, 1.0, 
     ];
 
     let vertex_obj = Vertex::new(
@@ -56,7 +107,7 @@ fn main() {
         vec![gl::FLOAT],
         vec![3],
         (3 * mem::size_of::<GLfloat>()) as _,
-        3,
+        36,
     );
     println!("OK: init main VBO and VAO");
 
@@ -79,6 +130,15 @@ fn main() {
     let mut event_pump = sdl.event_pump().unwrap();
     println!("OK: init event pump");
 
+    /* デバッグ用 */
+    let mut depth_test = true;
+    let mut blend = true;
+    let mut wireframe = true;
+    let mut culling = true;
+    let mut camera_x = 5.0f32;
+    let mut camera_y = -5.0f32;
+    let mut camera_z = 5.0f32;
+
     'main: loop {
         for event in event_pump.poll_iter() {
             imgui_sdl2.handle_event(&mut imgui, &event);
@@ -98,30 +158,57 @@ fn main() {
             }
         }
 
+        unsafe {
+            if depth_test {
+                gl::Enable(gl::DEPTH_TEST);
+            } else {
+                gl::Disable(gl::DEPTH_TEST);
+            }
+
+            if blend {
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            } else {
+                gl::Disable(gl::BLEND);
+            }
+
+            if wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            }
+
+            if culling {
+                gl::Enable(gl::CULL_FACE);
+            } else {
+                gl::Disable(gl::CULL_FACE);
+            }
+        }
+
         let (width, height) = window.drawable_size();
         unsafe {
             gl::Viewport(0, 0, width as i32, height as i32);
 
             gl::ClearColor(1.0, 1.0, 1.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         let model_matrix = Matrix4::identity();
-        let view_matrix = Matrix4::look_at(
+        let view_matrix = Matrix4::look_at_rh(
             Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: 5.0,
+                x: camera_x,
+                y: camera_y,
+                z: camera_z,
             },
             Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
+                x: 0.5,
+                y: 0.5,
+                z: 0.5,
             },
             Vector3 {
                 x: 0.0,
-                y: 1.0,
-                z: 0.0,
+                y: 0.0,
+                z: 1.0,
             },
         );
         let projection_matrix: Matrix4 = cgmath::perspective(
@@ -149,7 +236,9 @@ fn main() {
             .size([300.0, 200.0], imgui::Condition::FirstUseEver)
             .build(&ui, || {
                 ui.text(im_str!("OpenGL Test App ver 1.0"));
+
                 ui.separator();
+
                 ui.text(format!("FPS: {:.1}", ui.io().framerate));
                 let display_size = ui.io().display_size;
                 ui.text(format!(
@@ -161,6 +250,25 @@ fn main() {
                     "Mouse Position: ({:.1}, {:.1})",
                     mouse_pos[0], mouse_pos[1]
                 ));
+
+                ui.separator();
+
+                ui.checkbox(im_str!("Depth Test"), &mut depth_test);
+                ui.checkbox(im_str!("Blend"), &mut blend);
+                ui.checkbox(im_str!("Wireframe"), &mut wireframe);
+                ui.checkbox(im_str!("Culling"), &mut culling);
+
+                ui.separator();
+
+                imgui::Slider::new(im_str!("Camera X"))
+                    .range(-5.0..=5.0)
+                    .build(&ui, &mut camera_x);
+                imgui::Slider::new(im_str!("Camera Y"))
+                    .range(-5.0..=5.0)
+                    .build(&ui, &mut camera_y);
+                imgui::Slider::new(im_str!("Camera Z"))
+                    .range(-5.0..=5.0)
+                    .build(&ui, &mut camera_z);
             });
         imgui_renderer.render(ui);
 
