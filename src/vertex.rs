@@ -14,11 +14,15 @@ impl Vertex {
         size: GLsizeiptr,
         data: *const c_void,
         usage: GLenum,
+        num_attributes: usize,
         attribute_type_vec: std::vec::Vec<GLenum>,
         attribute_size_vec: std::vec::Vec<GLint>,
         stride: GLsizei,
         vertex_num: i32,
     ) -> Vertex {
+        assert!(num_attributes == attribute_type_vec.len());
+        assert!(num_attributes == attribute_size_vec.len());
+
         let mut vao = 0;
         let mut vbo = 0;
 
@@ -33,7 +37,7 @@ impl Vertex {
             gl::BufferData(gl::ARRAY_BUFFER, size, data, usage);
 
             let mut offset = 0;
-            for i in 0..attribute_type_vec.len() {
+            for i in 0..num_attributes {
                 gl::EnableVertexAttribArray(i as u32);
                 gl::VertexAttribPointer(
                     i as u32,
