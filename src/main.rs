@@ -32,11 +32,14 @@ fn main() {
         .position_centered()
         .build()
         .unwrap();
+    println!("OK: init window '{}'", window.title());
 
     let _gl_context = window.gl_create_context().unwrap();
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
+    println!("OK: init GL context");
 
     let shader = Shader::new("rsc/shader/shader.vs", "rsc/shader/shader.fs");
+    println!("OK: shader program");
 
     #[rustfmt::skip]
     let vertex_buffer: [f32; 9] = [
@@ -55,6 +58,7 @@ fn main() {
         (3 * mem::size_of::<GLfloat>()) as _,
         3,
     );
+    println!("OK: init main VBO and VAO");
 
     let mut imgui = imgui::Context::create();
     imgui.set_ini_filename(None);
@@ -63,10 +67,25 @@ fn main() {
     let imgui_renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
         video_subsystem.gl_get_proc_address(s) as _
     });
+    {
+        use imgui::im_str;
+        println!(
+            "OK: init ImGui (Platform: {}, Renderer: {})",
+            imgui.platform_name().unwrap_or(im_str!("Unknown")),
+            imgui.renderer_name().unwrap_or(im_str!("Unknown"))
+        );
+    }
 
     let mut event_pump = sdl.event_pump().unwrap();
+    println!("OK: init event pump");
+
     'main: loop {
         for event in event_pump.poll_iter() {
+            imgui_sdl2.handle_event(&mut imgui, &event);
+            if imgui_sdl2.ignore_event(&event) {
+                continue;
+            }
+
             use sdl2::event::Event;
             use sdl2::keyboard::Keycode;
             match event {
@@ -131,7 +150,7 @@ fn main() {
             .build(&ui, || {
                 ui.text(im_str!("OpenGL Test App ver 1.0"));
                 ui.separator();
-                ui.text(im_str!("FPS: {:.1}", ui.io().framerate));
+                ui.text(format!("FPS: {:.1}", ui.io().framerate));
                 let display_size = ui.io().display_size;
                 ui.text(format!(
                     "Display Size: ({:.1}, {:.1})",
