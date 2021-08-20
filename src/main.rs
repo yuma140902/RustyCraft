@@ -1,12 +1,15 @@
 use std::mem;
+use std::path::Path;
 
 use cgmath;
 use cgmath::prelude::SquareMatrix;
 
 use gl::types::*;
 
+mod image_manager;
 mod shader;
 mod vertex;
+use image_manager::ImageManager;
 use shader::Shader;
 use vertex::Vertex;
 
@@ -21,7 +24,7 @@ fn main() {
     {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-        gl_attr.set_context_version(3, 1);
+        gl_attr.set_context_version(3, 3);
         let (major, minor) = gl_attr.context_version();
         println!("OK: init OpenGL: version {}.{}", major, minor);
     }
@@ -39,74 +42,80 @@ fn main() {
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
     println!("OK: init GL context");
 
+    let mut image_manager = ImageManager::new();
+    println!("OK: init ImageManager");
+    image_manager.load_image(Path::new("rsc/image/surface.png"), "surface", true);
+    let surface_texture_id = image_manager.get_texture_id("surface");
+    println!("OK: load surface.png : {}", surface_texture_id);
+
     let shader = Shader::new("rsc/shader/shader.vs", "rsc/shader/shader.fs");
     println!("OK: shader program");
 
     #[rustfmt::skip]
-    let vertex_buffer: [f32; 108] = [
+    let vertex_buffer: [f32; 36*8] = [
         // 1
-        0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        1.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+        1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
 
-        0.0, 0.0, 0.0, 
-        1.0, 1.0, 0.0, 
-        1.0, 0.0, 0.0, 
+        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0,
+        1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
+        1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0, 1.0,
 
         // 2
-        0.0, 0.0, 1.0, 
-        0.0, 0.0, 0.0, 
-        1.0, 0.0, 0.0, 
+        0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0,
 
-        0.0, 0.0, 1.0, 
-        1.0, 0.0, 0.0, 
-        1.0, 0.0, 1.0, 
+        0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0,
+        1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 1.0,
 
         // 3
-        0.0, 1.0, 1.0, 
-        0.0, 0.0, 1.0, 
-        1.0, 0.0, 1.0, 
+        0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+        1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
 
-        0.0, 1.0, 1.0, 
-        1.0, 0.0, 1.0, 
-        1.0, 1.0, 1.0, 
+        0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+        1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 
         // 4
-        0.0, 1.0, 0.0, 
-        0.0, 1.0, 1.0, 
-        1.0, 1.0, 1.0, 
+        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
 
-        0.0, 1.0, 0.0, 
-        1.0, 1.0, 1.0, 
-        1.0, 1.0, 0.0, 
+        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+        1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
 
         // 5
-        1.0, 0.0, 1.0, 
-        1.0, 0.0, 0.0, 
-        1.0, 1.0, 0.0, 
+        1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
 
-        1.0, 0.0, 1.0, 
-        1.0, 1.0, 0.0, 
-        1.0, 1.0, 1.0, 
+        1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0,
 
         // 6
-        0.0, 1.0, 1.0, 
-        0.0, 1.0, 0.0, 
-        0.0, 0.0, 0.0, 
+        0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0,
 
-        0.0, 1.0, 1.0, 
-        0.0, 0.0, 0.0, 
-        0.0, 0.0, 1.0, 
+        0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0,
     ];
 
     let vertex_obj = Vertex::new(
         (vertex_buffer.len() * mem::size_of::<GLfloat>()) as _,
         vertex_buffer.as_ptr() as _,
         gl::STATIC_DRAW,
-        1usize,
-        vec![gl::FLOAT],
-        vec![3],
-        (3 * mem::size_of::<GLfloat>()) as _,
+        3usize,
+        vec![gl::FLOAT, gl::FLOAT, gl::FLOAT],
+        vec![3, 3, 2],
+        ((3 + 3 + 2) * mem::size_of::<GLfloat>()) as _,
         36,
     );
     println!("OK: init main VBO and VAO");
@@ -136,7 +145,7 @@ fn main() {
     let mut wireframe = false;
     let mut culling = true;
     let mut camera_x: f32 = 2.0;
-    let mut camera_y: f32 = -2.0;
+    let mut camera_y: f32 = 3.0;
     let mut camera_z: f32 = 2.0;
 
     'main: loop {
@@ -226,7 +235,11 @@ fn main() {
             shader.set_mat4(c_str!("uProjection"), &projection_matrix);
         }
 
-        vertex_obj.draw();
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, surface_texture_id);
+            vertex_obj.draw();
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
 
         imgui_sdl2.prepare_frame(imgui.io_mut(), &window, &event_pump.mouse_state());
 
@@ -271,6 +284,7 @@ fn main() {
                     .range(-5.0..=5.0)
                     .build(&ui, &mut camera_z);
             });
+        imgui_sdl2.prepare_render(&ui, &window);
         imgui_renderer.render(ui);
 
         window.gl_swap_window();
