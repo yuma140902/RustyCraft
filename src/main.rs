@@ -234,8 +234,9 @@ fn main() {
         use imgui::im_str;
         imgui::Window::new(im_str!("Information"))
             .size([300.0, 300.0], imgui::Condition::FirstUseEver)
+            .position([5.0, 5.0], imgui::Condition::FirstUseEver)
             .build(&ui, || {
-                ui.text(im_str!("OpenGL Test App ver 1.0"));
+                ui.text(im_str!("OpenGL Sandbox 1.0"));
 
                 ui.separator();
 
