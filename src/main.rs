@@ -133,11 +133,11 @@ fn main() {
     /* デバッグ用 */
     let mut depth_test = true;
     let mut blend = true;
-    let mut wireframe = true;
+    let mut wireframe = false;
     let mut culling = true;
-    let mut camera_x = 5.0f32;
-    let mut camera_y = -5.0f32;
-    let mut camera_z = 5.0f32;
+    let mut camera_x: f32 = 2.0;
+    let mut camera_y: f32 = -2.0;
+    let mut camera_z: f32 = 2.0;
 
     'main: loop {
         for event in event_pump.poll_iter() {
