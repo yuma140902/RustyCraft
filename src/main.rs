@@ -6,9 +6,11 @@ use cgmath::prelude::SquareMatrix;
 
 use gl::types::*;
 
+mod camera_computer;
 mod image_manager;
 mod shader;
 mod vertex;
+use camera_computer::CameraComputer;
 use image_manager::ImageManager;
 use shader::Shader;
 use vertex::Vertex;
@@ -139,14 +141,14 @@ fn main() {
     let mut event_pump = sdl.event_pump().unwrap();
     println!("OK: init event pump");
 
+    let mut camera_computer = CameraComputer::new();
+    println!("OK: camera computer");
+
     /* デバッグ用 */
     let mut depth_test = true;
     let mut blend = true;
     let mut wireframe = false;
     let mut culling = true;
-    let mut camera_x: f32 = 2.0;
-    let mut camera_y: f32 = 3.0;
-    let mut camera_z: f32 = 2.0;
 
     'main: loop {
         for event in event_pump.poll_iter() {
@@ -203,23 +205,7 @@ fn main() {
         }
 
         let model_matrix = Matrix4::identity();
-        let view_matrix = Matrix4::look_at_rh(
-            Point3 {
-                x: camera_x,
-                y: camera_y,
-                z: camera_z,
-            },
-            Point3 {
-                x: 0.5,
-                y: 0.5,
-                z: 0.5,
-            },
-            Vector3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-        );
+        let view_matrix = camera_computer.compute_view_matrix(&sdl, &window, &event_pump);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
             width as f32 / height as f32,
@@ -274,15 +260,8 @@ fn main() {
 
                 ui.separator();
 
-                imgui::Slider::new(im_str!("Camera X"))
-                    .range(-5.0..=5.0)
-                    .build(&ui, &mut camera_x);
-                imgui::Slider::new(im_str!("Camera Y"))
-                    .range(-5.0..=5.0)
-                    .build(&ui, &mut camera_y);
-                imgui::Slider::new(im_str!("Camera Z"))
-                    .range(-5.0..=5.0)
-                    .build(&ui, &mut camera_z);
+                ui.text(format!("Pitch: {:?}", camera_computer.pitch()));
+                ui.text(format!("Yaw: {:?}", camera_computer.yaw()));
             });
         imgui_sdl2.prepare_render(&ui, &window);
         imgui_renderer.render(ui);
