@@ -265,6 +265,7 @@ fn main() {
 
                 ui.separator();
 
+                ui.text(format!("Position: {:?}", camera_computer.position()));
                 ui.text(format!("Pitch: {:?}", camera_computer.pitch()));
                 ui.text(format!("Yaw: {:?}", camera_computer.yaw()));
             });
