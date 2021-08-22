@@ -3,9 +3,9 @@ use sdl2::mouse::MouseState;
 use sdl2::video::Window;
 use sdl2::{EventPump, Sdl};
 
-use cgmath::Angle;
 use cgmath::Deg;
 use cgmath::Zero;
+use cgmath::{Angle, InnerSpace};
 
 type Point3 = cgmath::Point3<f32>;
 type Vector3 = cgmath::Vector3<f32>;
@@ -87,7 +87,8 @@ impl CameraComputer {
             x: self.yaw.cos() * self.pitch.sin(),
             y: self.yaw.sin(),
             z: self.yaw.cos() * self.pitch.cos(),
-        };
+        }
+        .normalize();
 
         let right: Deg<f32> = self.pitch - Deg(90.0f32);
         // カメラの右方向のベクトル
@@ -95,7 +96,8 @@ impl CameraComputer {
             x: right.sin(),
             y: 0.0f32, // ロールは0なので常に床と水平
             z: right.cos(),
-        };
+        }
+        .normalize();
 
         // カメラの上方向のベクトル
         self.up = self.right.cross(self.front);
@@ -105,7 +107,8 @@ impl CameraComputer {
             x: self.front.x,
             y: 0.0,
             z: self.front.z,
-        };
+        }
+        .normalize();
         let up_on_ground = Vector3 {
             x: 0.0,
             y: 1.0,
