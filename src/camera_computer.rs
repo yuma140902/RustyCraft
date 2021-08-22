@@ -14,6 +14,7 @@ pub struct CameraComputer {
     pitch: Deg<f32>,
     yaw: Deg<f32>,
     rotate_speed: f32,
+    move_speed: f32,
 }
 
 impl CameraComputer {
@@ -25,8 +26,9 @@ impl CameraComputer {
                 z: 2.0,
             },
             pitch: Deg(90.0f32),
-            yaw: Deg(0.0f32),
+            yaw: Deg(90.0f32),
             rotate_speed: 0.6f32,
+            move_speed: 0.6f32,
         }
     }
 
@@ -38,7 +40,7 @@ impl CameraComputer {
         self.yaw
     }
 
-    pub fn compute_view_matrix(&mut self, sdl: &Sdl, window: &Window, e: &EventPump) -> Matrix4 {
+    pub fn update(&mut self, sdl: &Sdl, window: &Window, e: &EventPump) {
         /* 参考:
         チュートリアル６：キーボードとマウス | http://www.opengl-tutorial.org/jp/beginners-tutorials/tutorial-6-keyboard-and-mouse
         ogl/controls.cpp at master · opengl-tutorials/ogl | https://github.com/opengl-tutorials/ogl/blob/master/common/controls.cpp
@@ -66,6 +68,11 @@ impl CameraComputer {
             self.pitch -= Deg(360f32);
         }
 
+        // マウスを中心に戻す
+        sdl.mouse().warp_mouse_in_window(window, center_x, center_y);
+    }
+
+    pub fn compute_view_matrix(&self) -> Matrix4 {
         // カメラの前方向のベクトル
         let front: Vector3 = Vector3 {
             x: self.yaw.cos() * self.pitch.sin(),
@@ -83,9 +90,6 @@ impl CameraComputer {
 
         // カメラの上方向のベクトル
         let up: Vector3 = right.cross(front);
-
-        // マウスを中心に戻す
-        sdl.mouse().warp_mouse_in_window(window, center_x, center_y);
 
         Matrix4::look_at_rh(self.position, self.position + front, up)
     }

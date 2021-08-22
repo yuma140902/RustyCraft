@@ -21,7 +21,11 @@ type Matrix4 = cgmath::Matrix4<f32>;
 
 fn main() {
     let sdl = sdl2::init().unwrap();
+    println!("OK: init SDL2: {}", sdl2::version::version());
     let video_subsystem = sdl.video().unwrap();
+    println!("OK: init SDL2 Video Subsystem");
+    let timer_subsystem = sdl.timer().unwrap();
+    println!("OK: init SDL2 Timer Subsystem");
 
     {
         let gl_attr = video_subsystem.gl_attr();
@@ -56,7 +60,7 @@ fn main() {
     #[rustfmt::skip]
     let vertex_buffer: [f32; 36*8] = [
         // 1
-        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, /*1.0*/0.0,
         0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0,
         1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
 
@@ -168,6 +172,7 @@ fn main() {
                 _ => {}
             }
         }
+        camera_computer.update(&sdl, &window, &event_pump);
 
         unsafe {
             if depth_test {
@@ -205,7 +210,7 @@ fn main() {
         }
 
         let model_matrix = Matrix4::identity();
-        let view_matrix = camera_computer.compute_view_matrix(&sdl, &window, &event_pump);
+        let view_matrix = camera_computer.compute_view_matrix();
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
             width as f32 / height as f32,
