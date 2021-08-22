@@ -162,6 +162,36 @@ fn main() {
     let mut blend = true;
     let mut wireframe = false;
     let mut culling = true;
+    let mut alpha: f32 = 1.0;
+    /* ベクトルではなく色 */
+    let mut material_specular = Vector3 {
+        x: 0.2,
+        y: 0.2,
+        z: 0.2,
+    };
+    let mut material_shininess: f32 = 0.1;
+    let mut light_direction = Vector3 {
+        x: 1.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    /* ambient, diffuse, specular はベクトルではなく色 */
+    let mut ambient = Vector3 {
+        x: 0.3,
+        y: 0.3,
+        z: 0.3,
+    };
+    let mut diffuse = Vector3 {
+        x: 0.5,
+        y: 0.5,
+        z: 0.5,
+    };
+    let mut specular = Vector3 {
+        x: 0.2,
+        y: 0.2,
+        z: 0.2,
+    };
+    let mut pause = false;
 
     'main: loop {
         for event in event_pump.poll_iter() {
@@ -173,15 +203,17 @@ fn main() {
             use sdl2::event::Event;
             use sdl2::keyboard::Keycode;
             match event {
-                Event::Quit { .. }
-                | Event::KeyUp {
+                Event::Quit { .. } => break 'main,
+                Event::KeyUp {
                     keycode: Some(Keycode::Escape),
                     ..
-                } => break 'main,
+                } => pause = !pause,
                 _ => {}
             }
         }
-        PlayerController::update_player(&mut player, &sdl, &window, &event_pump);
+        if !pause {
+            PlayerController::update_player(&mut player, &sdl, &window, &event_pump);
+        }
 
         unsafe {
             if depth_test {
@@ -233,6 +265,19 @@ fn main() {
             shader.set_mat4(c_str!("uModel"), &model_matrix);
             shader.set_mat4(c_str!("uView"), &view_matrix);
             shader.set_mat4(c_str!("uProjection"), &projection_matrix);
+            shader.set_float(c_str!("uAlpha"), alpha);
+            shader.set_vec3(
+                c_str!("uViewPosition"),
+                player.position().x,
+                player.position().y,
+                player.position().z,
+            );
+            shader.set_vector3(c_str!("uMaterial.specular"), &material_specular);
+            shader.set_float(c_str!("uMaterial.shininess"), material_shininess);
+            shader.set_vector3(c_str!("uLight.direction"), &light_direction);
+            shader.set_vector3(c_str!("uLight.ambient"), &ambient);
+            shader.set_vector3(c_str!("uLight.diffuse"), &diffuse);
+            shader.set_vector3(c_str!("uLight.specular"), &specular);
         }
 
         unsafe {
@@ -277,7 +322,81 @@ fn main() {
                 ui.text(format!("Position: {:?}", player.position()));
                 ui.text(format!("Pitch: {:?}", player.pitch()));
                 ui.text(format!("Yaw: {:?}", player.yaw()));
+                ui.text(format!("Pause: {}", pause));
             });
+        imgui::Window::new(im_str!("Light"))
+            .size([300.0, 450.0], imgui::Condition::FirstUseEver)
+            .position([600.0, 10.0], imgui::Condition::FirstUseEver)
+            .build(&ui, || {
+                imgui::Slider::new(im_str!("Alpha"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut alpha);
+
+                ui.separator();
+
+                imgui::Slider::new(im_str!("Material Specular X"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut material_specular.x);
+                imgui::Slider::new(im_str!("Material Specular Y"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut material_specular.y);
+                imgui::Slider::new(im_str!("Material Specular Z"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut material_specular.z);
+
+                imgui::Slider::new(im_str!("Material Shininess"))
+                    .range(0.0..=2.0)
+                    .build(&ui, &mut material_shininess);
+
+                ui.separator();
+
+                imgui::Slider::new(im_str!("Direction X"))
+                    .range(-1.0..=1.0)
+                    .build(&ui, &mut light_direction.x);
+                imgui::Slider::new(im_str!("Direction Y"))
+                    .range(-1.0..=1.0)
+                    .build(&ui, &mut light_direction.y);
+                imgui::Slider::new(im_str!("Direction Z"))
+                    .range(-1.0..=1.0)
+                    .build(&ui, &mut light_direction.z);
+
+                ui.separator();
+
+                #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Ambient R")).range(0.0..=1.0)
+                        .build(&ui, &mut ambient.x);
+                #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Ambient G")).range(0.0..=1.0)
+                        .build(&ui, &mut ambient.y);
+                #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Ambient B")).range(0.0..=1.0)
+                        .build(&ui, &mut ambient.z);
+
+                ui.separator();
+
+                imgui::Slider::new(im_str!("Diffuse R"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut diffuse.x);
+                imgui::Slider::new(im_str!("Diffuse G"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut diffuse.y);
+                imgui::Slider::new(im_str!("Diffuse B"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut diffuse.z);
+
+                ui.separator();
+
+                imgui::Slider::new(im_str!("Specular R"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut specular.x);
+                imgui::Slider::new(im_str!("Specular G"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut specular.y);
+                imgui::Slider::new(im_str!("Specular B"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut specular.z);
+            });
+
         imgui_sdl2.prepare_render(&ui, &window);
         imgui_renderer.render(ui);
 
