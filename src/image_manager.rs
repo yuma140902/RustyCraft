@@ -4,13 +4,17 @@ use std::path::Path;
 
 use image::GenericImageView;
 
+use gl::Gl;
+
 pub struct ImageManager {
+    gl: Gl,
     image_map: HashMap<String, u32>,
 }
 
 impl ImageManager {
-    pub fn new() -> ImageManager {
+    pub fn new(gl: Gl) -> ImageManager {
         let image_manager = ImageManager {
+            gl,
             image_map: HashMap::new(),
         };
         image_manager
@@ -43,13 +47,17 @@ impl ImageManager {
         let mut texture = 0;
 
         unsafe {
-            gl::GenTextures(1, &mut texture);
-            gl::BindTexture(gl::TEXTURE_2D, texture);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-            gl::TexImage2D(
+            self.gl.GenTextures(1, &mut texture);
+            self.gl.BindTexture(gl::TEXTURE_2D, texture);
+            self.gl
+                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+            self.gl
+                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            self.gl
+                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+            self.gl
+                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+            self.gl.TexImage2D(
                 gl::TEXTURE_2D,
                 0,
                 format as i32,
@@ -60,8 +68,8 @@ impl ImageManager {
                 gl::UNSIGNED_BYTE,
                 &data[0] as *const u8 as *const c_void,
             );
-            gl::GenerateMipmap(gl::TEXTURE_2D);
-            gl::BindTexture(gl::TEXTURE_2D, 0);
+            self.gl.GenerateMipmap(gl::TEXTURE_2D);
+            self.gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 
         self.image_map.insert(id.to_string(), texture);

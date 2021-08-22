@@ -2,8 +2,10 @@ use std::mem;
 use std::os::raw::c_void;
 
 use gl::types::{GLenum, GLfloat, GLint, GLsizei, GLsizeiptr};
+use gl::Gl;
 
 pub struct Vertex {
+    gl: Gl,
     vao: u32,
     _vbo: u32,
     vertex_num: i32,
@@ -11,6 +13,7 @@ pub struct Vertex {
 
 impl Vertex {
     pub fn new(
+        gl: gl::Gl,
         size: GLsizeiptr,
         data: *const c_void,
         usage: GLenum,
@@ -28,18 +31,18 @@ impl Vertex {
 
         unsafe {
             // create vertex array object and vertex buffer object
-            gl::GenVertexArrays(1, &mut vao);
-            gl::GenBuffers(1, &mut vbo);
+            gl.GenVertexArrays(1, &mut vao);
+            gl.GenBuffers(1, &mut vbo);
 
             // bind buffer
-            gl::BindVertexArray(vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-            gl::BufferData(gl::ARRAY_BUFFER, size, data, usage);
+            gl.BindVertexArray(vao);
+            gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
+            gl.BufferData(gl::ARRAY_BUFFER, size, data, usage);
 
             let mut offset = 0;
             for i in 0..num_attributes {
-                gl::EnableVertexAttribArray(i as u32);
-                gl::VertexAttribPointer(
+                gl.EnableVertexAttribArray(i as u32);
+                gl.VertexAttribPointer(
                     i as u32,
                     attribute_size_vec[i],
                     attribute_type_vec[i],
@@ -51,22 +54,23 @@ impl Vertex {
             }
 
             // unbind
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::BindVertexArray(0);
+            gl.BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl.BindVertexArray(0);
         }
 
         Vertex {
-            vao: vao,
+            gl,
+            vao,
             _vbo: vbo,
-            vertex_num: vertex_num,
+            vertex_num,
         }
     }
 
     pub fn draw(&self) {
         unsafe {
-            gl::BindVertexArray(self.vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, self.vertex_num);
-            gl::BindVertexArray(0);
+            self.gl.BindVertexArray(self.vao);
+            self.gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_num);
+            self.gl.BindVertexArray(0);
         }
     }
 }

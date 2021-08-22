@@ -6,7 +6,7 @@ build = "build.rs"
 
 [dependencies]
 sdl2 = "0.34.5"
-gl = "0.14.0"
+gl = {path = "lib/gl"}
 cgmath = "0.18.0"
 c_str_macro = "1.0.3"
 imgui = "0.7.0"

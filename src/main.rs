@@ -5,6 +5,7 @@ use cgmath;
 use cgmath::prelude::SquareMatrix;
 
 use gl::types::*;
+use gl::Gl;
 
 mod camera_computer;
 mod game_config;
@@ -52,16 +53,16 @@ fn main() {
     println!("OK: init window '{}'", window.title());
 
     let _gl_context = window.gl_create_context().unwrap();
-    gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
+    let gl = Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
     println!("OK: init GL context");
 
-    let mut image_manager = ImageManager::new();
+    let mut image_manager = ImageManager::new(gl.clone());
     println!("OK: init ImageManager");
     image_manager.load_image(Path::new("rsc/image/surface.png"), "surface", true);
     let surface_texture_id = image_manager.get_texture_id("surface");
     println!("OK: load surface.png : {}", surface_texture_id);
 
-    let shader = Shader::new("rsc/shader/shader.vs", "rsc/shader/shader.fs");
+    let shader = Shader::new(gl.clone(), "rsc/shader/shader.vs", "rsc/shader/shader.fs");
     println!("OK: shader program");
 
     #[rustfmt::skip]
@@ -122,6 +123,7 @@ fn main() {
     ];
 
     let vertex_obj = Vertex::new(
+        gl.clone(),
         (vertex_buffer.len() * mem::size_of::<GLfloat>()) as _,
         vertex_buffer.as_ptr() as _,
         gl::STATIC_DRAW,
@@ -222,37 +224,37 @@ fn main() {
 
         unsafe {
             if depth_test {
-                gl::Enable(gl::DEPTH_TEST);
+                gl.Enable(gl::DEPTH_TEST);
             } else {
-                gl::Disable(gl::DEPTH_TEST);
+                gl.Disable(gl::DEPTH_TEST);
             }
 
             if blend {
-                gl::Enable(gl::BLEND);
-                gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                gl.Enable(gl::BLEND);
+                gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             } else {
-                gl::Disable(gl::BLEND);
+                gl.Disable(gl::BLEND);
             }
 
             if wireframe {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
             } else {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
 
             if culling {
-                gl::Enable(gl::CULL_FACE);
+                gl.Enable(gl::CULL_FACE);
             } else {
-                gl::Disable(gl::CULL_FACE);
+                gl.Disable(gl::CULL_FACE);
             }
         }
 
         let (width, height) = window.drawable_size();
         unsafe {
-            gl::Viewport(0, 0, width as i32, height as i32);
+            gl.Viewport(0, 0, width as i32, height as i32);
 
-            gl::ClearColor(1.0, 1.0, 1.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         let model_matrix = Matrix4::identity();
@@ -286,9 +288,9 @@ fn main() {
         }
 
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, surface_texture_id);
+            gl.BindTexture(gl::TEXTURE_2D, surface_texture_id);
             vertex_obj.draw();
-            gl::BindTexture(gl::TEXTURE_2D, 0);
+            gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 
         imgui_sdl2.prepare_frame(imgui.io_mut(), &window, &event_pump.mouse_state());
