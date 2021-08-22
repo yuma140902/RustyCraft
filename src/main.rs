@@ -17,6 +17,7 @@ use camera_computer::CameraComputer;
 use image_manager::ImageManager;
 use player::Player;
 use player::PlayerController;
+use shader::Program;
 use shader::Shader;
 use vertex::Vertex;
 
@@ -62,7 +63,9 @@ fn main() {
     let surface_texture_id = image_manager.get_texture_id("surface");
     println!("OK: load surface.png : {}", surface_texture_id);
 
-    let shader = Shader::new(gl.clone(), "rsc/shader/shader.vs", "rsc/shader/shader.fs");
+    let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
+    let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
+    let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
     println!("OK: shader program");
 
     #[rustfmt::skip]
@@ -268,7 +271,7 @@ fn main() {
 
         unsafe {
             use c_str_macro::c_str;
-            shader.use_program();
+            shader.set_used();
             shader.set_mat4(c_str!("uModel"), &model_matrix);
             shader.set_mat4(c_str!("uView"), &view_matrix);
             shader.set_mat4(c_str!("uProjection"), &projection_matrix);

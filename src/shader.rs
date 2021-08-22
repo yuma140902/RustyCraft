@@ -7,7 +7,6 @@ use gl::Gl;
 use std::ffi::{CStr, CString};
 use std::fs::File;
 use std::io::Read;
-use std::ptr;
 use std::str;
 
 #[allow(dead_code)]
@@ -15,71 +14,59 @@ type Vector3 = cgmath::Vector3<f32>;
 #[allow(dead_code)]
 type Matrix4 = cgmath::Matrix4<f32>;
 
-pub struct Shader {
+pub struct Program {
     gl: Gl,
     id: GLuint,
 }
 
-impl Shader {
-    pub fn new(gl: Gl, vertex_path: &str, fragment_path: &str) -> Shader {
-        let mut shader = Shader { gl, id: 0 };
-
-        // vertex
-        let mut vertex_file = File::open(vertex_path)
-            .unwrap_or_else(|_| panic!("failed to open file: {}", vertex_path));
-        let mut fragment_file = File::open(fragment_path)
-            .unwrap_or_else(|_| panic!("failed to open file: {}", fragment_path));
-        let mut vertex_code = String::new();
-
-        // fragment
-        let mut fragment_code = String::new();
-        vertex_file
-            .read_to_string(&mut vertex_code)
-            .expect("failed to read vertex shader file");
-        fragment_file
-            .read_to_string(&mut fragment_code)
-            .expect("failed to read fragment shader file");
-
-        // create cstring
-        let cstr_vertex_code = CString::new(vertex_code.as_bytes()).unwrap();
-        let cstr_fragment_code = CString::new(fragment_code.as_bytes()).unwrap();
-
-        unsafe {
-            // vertex shader
-            let vertex = shader.gl.CreateShader(gl::VERTEX_SHADER);
-            shader
-                .gl
-                .ShaderSource(vertex, 1, &cstr_vertex_code.as_ptr(), ptr::null());
-            shader.gl.CompileShader(vertex);
-            shader.check_compile_errors(vertex, "VERTEX");
-
-            // fragment shader
-            let fragment = shader.gl.CreateShader(gl::FRAGMENT_SHADER);
-            shader
-                .gl
-                .ShaderSource(fragment, 1, &cstr_fragment_code.as_ptr(), ptr::null());
-            shader.gl.CompileShader(fragment);
-            shader.check_compile_errors(fragment, "FRAGMENT");
-
-            // shader program
-            let id = shader.gl.CreateProgram();
-            shader.gl.AttachShader(id, vertex);
-            shader.gl.AttachShader(id, fragment);
-            shader.gl.LinkProgram(id);
-            shader.check_compile_errors(id, "PROGRAM");
-
-            // delete
-            shader.gl.DeleteShader(vertex);
-            shader.gl.DeleteShader(fragment);
-
-            shader.id = id;
+impl Program {
+    pub fn from_shaders(gl: Gl, shaders: &[Shader]) -> Result<Program, String> {
+        let program_id = unsafe { gl.CreateProgram() };
+        for shader in shaders {
+            unsafe {
+                gl.AttachShader(program_id, shader.id());
+            }
         }
 
-        shader
+        unsafe {
+            gl.LinkProgram(program_id);
+        }
+
+        let mut success: GLint = 1;
+        unsafe {
+            gl.GetProgramiv(program_id, gl::LINK_STATUS, &mut success);
+        }
+        if success == 0 {
+            let mut len: GLint = 0;
+            unsafe { gl.GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len) }
+            let error = create_whitespace_cstring_with_len(len as usize);
+
+            unsafe {
+                gl.GetProgramInfoLog(
+                    program_id,
+                    len,
+                    std::ptr::null_mut(),
+                    error.as_ptr() as *mut GLchar,
+                )
+            }
+
+            return Err(error.to_string_lossy().into_owned());
+        }
+
+        for shader in shaders {
+            unsafe { gl.DetachShader(program_id, shader.id()) }
+        }
+        Ok(Program { gl, id: program_id })
     }
 
-    pub unsafe fn use_program(&self) {
-        self.gl.UseProgram(self.id)
+    pub fn id(&self) -> GLuint {
+        self.id
+    }
+
+    pub fn set_used(&self) {
+        unsafe {
+            self.gl.UseProgram(self.id);
+        }
     }
 
     pub unsafe fn set_bool(&self, name: &CStr, value: bool) {
@@ -120,120 +107,77 @@ impl Shader {
             mat.as_ptr(),
         );
     }
+}
 
-    unsafe fn check_compile_errors(&self, shader: u32, type_: &str) {
-        let mut success = gl::FALSE as GLint;
-        let mut info_log = Vec::with_capacity(1024);
-        info_log.set_len(1024 - 1); // subtract 1 to skip the trailing null character
-        if type_ != "PROGRAM" {
-            self.gl
-                .GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
-            if success != gl::TRUE as GLint {
-                self.gl.GetShaderInfoLog(
-                    shader,
-                    1024,
-                    ptr::null_mut(),
-                    info_log.as_mut_ptr() as *mut GLchar,
-                );
-                let info_log_string = match String::from_utf8(info_log) {
-                    Ok(log) => log,
-                    Err(vec) => panic!("failed to convert to compilation log from buffer: {}", vec),
-                };
-                println!(
-                    "failed to compile shader code: type={}, log={}",
-                    type_, info_log_string
-                );
-            }
-        } else {
-            self.gl.GetProgramiv(shader, gl::LINK_STATUS, &mut success);
-            if success != gl::TRUE as GLint {
-                self.gl.GetProgramInfoLog(
-                    shader,
-                    1024,
-                    ptr::null_mut(),
-                    info_log.as_mut_ptr() as *mut GLchar,
-                );
-                let info_log_string = match String::from_utf8(info_log) {
-                    Ok(log) => log,
-                    Err(vec) => panic!("failed to convert to link log from buffer: {}", vec),
-                };
-                println!(
-                    "failed to link shader code: type={}, log={}",
-                    type_, info_log_string
-                );
-            }
+impl Drop for Program {
+    fn drop(&mut self) {
+        unsafe {
+            self.gl.DeleteProgram(self.id);
         }
     }
+}
 
-    #[rustfmt::skip]
-    pub fn with_geometry_shader(
-        gl: Gl,
-        vertex_path: &str,
-        fragment_path: &str,
-        geometry_path: &str,
-    ) -> Self {
-        let mut shader = Shader {gl, id: 0 };
-        let mut vertex_file = File::open(vertex_path)
-            .unwrap_or_else(|_| panic!("failed to open file: {}", vertex_path));
-        let mut fragment_file = File::open(fragment_path)
-            .unwrap_or_else(|_| panic!("failed to open file: {}", fragment_path));
-        let mut geometry_file = File::open(geometry_path)
-            .unwrap_or_else(|_| panic!("failed to open file: {}", geometry_path));
-        let mut vertex_code = String::new();
-        let mut fragment_code = String::new();
-        let mut geometry_code = String::new();
-        vertex_file
-            .read_to_string(&mut vertex_code)
-            .expect("failed to read vertex shader");
-        fragment_file
-            .read_to_string(&mut fragment_code)
-            .expect("failed to read fragment shader");
-        geometry_file
-            .read_to_string(&mut geometry_code)
-            .expect("failed to read geometry shader");
+pub struct Shader {
+    gl: Gl,
+    id: GLuint,
+}
 
-        let cstr_vertex_code = CString::new(
-            vertex_code.as_bytes()).unwrap();
-        let cstr_fragment_code = CString::new(
-            fragment_code.as_bytes()).unwrap();
-        let cstr_geometry_code = CString::new(
-            geometry_code.as_bytes()).unwrap();
+impl Shader {
+    pub fn from_file(gl: Gl, path: &str, kind: GLenum) -> Result<Shader, String> {
+        let id = unsafe { gl.CreateShader(kind) };
+
+        let mut file = File::open(path)
+            .unwrap_or_else(|err| panic!("ERROR: {} : Failed to open file '{}'", err, path));
+        let mut code = String::new();
+        file.read_to_string(&mut code)
+            .unwrap_or_else(|err| panic!("ERROR: {} : Failed to read file '{}'", err, path));
+
+        let code = CString::new(code.as_bytes()).unwrap();
 
         unsafe {
-            // vertex shader
-            let vertex = shader.gl.CreateShader(gl::VERTEX_SHADER);
-            shader.gl.ShaderSource(vertex, 1, &cstr_vertex_code.as_ptr(), ptr::null());
-            shader.gl.CompileShader(vertex);
-            shader.check_compile_errors(vertex, "VERTEX");
-
-            // fragment shader
-            let fragment = shader.gl.CreateShader(gl::FRAGMENT_SHADER);
-            shader.gl.ShaderSource(fragment, 1, &cstr_fragment_code.as_ptr(), ptr::null());
-            shader.gl.CompileShader(fragment);
-            shader.check_compile_errors(fragment, "FRAGMENT");
-
-            // geometry shader
-            let geometry = shader.gl.CreateShader(gl::GEOMETRY_SHADER);
-            shader.gl.ShaderSource(geometry, 1, &cstr_geometry_code.as_ptr(), ptr::null());
-            shader.gl.CompileShader(geometry);
-            shader.check_compile_errors(geometry, "GEOMETRY");
-
-            // shader program
-            let id = shader.gl.CreateProgram();
-            shader.gl.AttachShader(id, vertex);
-            shader.gl.AttachShader(id, fragment);
-            shader.gl.AttachShader(id, geometry);
-            shader.gl.LinkProgram(id);
-            shader.check_compile_errors(id, "PROGRAM");
-
-            // delete
-            shader.gl.DeleteShader(vertex);
-            shader.gl.DeleteShader(fragment);
-            shader.gl.DeleteShader(geometry);
-            shader.id = id;
+            gl.ShaderSource(id, 1, &code.as_ptr(), std::ptr::null());
+            gl.CompileShader(id);
+        }
+        let mut success: GLint = 1;
+        unsafe {
+            gl.GetShaderiv(id, gl::COMPILE_STATUS, &mut success);
         }
 
-        shader
+        /* コンパイル失敗の時 */
+        if success == 0 {
+            let mut len: GLint = 0;
+            unsafe {
+                gl.GetShaderiv(id, gl::INFO_LOG_LENGTH, &mut len);
+            }
+
+            let error = create_whitespace_cstring_with_len(len as usize);
+            unsafe {
+                gl.GetShaderInfoLog(id, len, std::ptr::null_mut(), error.as_ptr() as *mut GLchar);
+            }
+
+            return Err(error.to_string_lossy().into_owned());
+        }
+        Ok(Shader { gl, id })
+    }
+
+    pub fn from_vert_file(gl: Gl, path: &str) -> Result<Shader, String> {
+        Shader::from_file(gl, path, gl::VERTEX_SHADER)
+    }
+
+    pub fn from_frag_file(gl: Gl, path: &str) -> Result<Shader, String> {
+        Shader::from_file(gl, path, gl::FRAGMENT_SHADER)
+    }
+
+    pub fn id(&self) -> GLuint {
+        self.id
+    }
+}
+
+impl Drop for Shader {
+    fn drop(&mut self) {
+        unsafe {
+            self.gl.DeleteShader(self.id);
+        }
     }
 }
 
