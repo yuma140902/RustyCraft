@@ -7,16 +7,23 @@ use cgmath::prelude::SquareMatrix;
 use gl::types::*;
 
 mod camera_computer;
+mod game_config;
 mod image_manager;
+mod player;
 mod shader;
 mod vertex;
 use camera_computer::CameraComputer;
 use image_manager::ImageManager;
+use player::Player;
+use player::PlayerController;
 use shader::Shader;
 use vertex::Vertex;
 
+#[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
+#[allow(unused)]
 type Vector3 = cgmath::Vector3<f32>;
+#[allow(unused)]
 type Matrix4 = cgmath::Matrix4<f32>;
 
 fn main() {
@@ -145,8 +152,10 @@ fn main() {
     let mut event_pump = sdl.event_pump().unwrap();
     println!("OK: init event pump");
 
-    let mut camera_computer = CameraComputer::new();
-    println!("OK: camera computer");
+    let mut player = Player::new();
+    println!("OK: generate Player");
+    let camera = CameraComputer::new();
+    println!("OK: init camera computer");
 
     /* デバッグ用 */
     let mut depth_test = true;
@@ -172,7 +181,7 @@ fn main() {
                 _ => {}
             }
         }
-        camera_computer.update(&sdl, &window, &event_pump);
+        PlayerController::update_player(&mut player, &sdl, &window, &event_pump);
 
         unsafe {
             if depth_test {
@@ -210,7 +219,7 @@ fn main() {
         }
 
         let model_matrix = Matrix4::identity();
-        let view_matrix = camera_computer.compute_view_matrix();
+        let view_matrix = camera.compute_view_matrix(&player);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
             width as f32 / height as f32,
@@ -265,9 +274,9 @@ fn main() {
 
                 ui.separator();
 
-                ui.text(format!("Position: {:?}", camera_computer.position()));
-                ui.text(format!("Pitch: {:?}", camera_computer.pitch()));
-                ui.text(format!("Yaw: {:?}", camera_computer.yaw()));
+                ui.text(format!("Position: {:?}", player.position()));
+                ui.text(format!("Pitch: {:?}", player.pitch()));
+                ui.text(format!("Yaw: {:?}", player.yaw()));
             });
         imgui_sdl2.prepare_render(&ui, &window);
         imgui_renderer.render(ui);
