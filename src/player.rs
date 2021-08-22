@@ -1,7 +1,7 @@
 use sdl2::keyboard::{KeyboardState, Scancode};
 use sdl2::mouse::MouseState;
 use sdl2::video::Window;
-use sdl2::{EventPump, Sdl};
+use sdl2::{EventPump, Sdl, TimerSubsystem};
 
 use cgmath::Deg;
 use cgmath::Zero;
@@ -66,14 +66,33 @@ impl Player {
     }
 }
 
-pub struct PlayerController {}
+pub struct PlayerController {
+    last_tick: u32,
+}
 
 impl PlayerController {
-    pub fn update_player(player: &mut Player, sdl: &Sdl, window: &Window, e: &EventPump) {
+    pub fn new(time: &TimerSubsystem) -> PlayerController {
+        PlayerController {
+            last_tick: time.ticks(),
+        }
+    }
+
+    pub fn update_player(
+        &mut self,
+        player: &mut Player,
+        sdl: &Sdl,
+        window: &Window,
+        e: &EventPump,
+        time: &TimerSubsystem,
+    ) {
         /* 参考:
         チュートリアル６：キーボードとマウス | http://www.opengl-tutorial.org/jp/beginners-tutorials/tutorial-6-keyboard-and-mouse
         ogl/controls.cpp at master · opengl-tutorials/ogl | https://github.com/opengl-tutorials/ogl/blob/master/common/controls.cpp
         */
+
+        let current_tick = time.ticks();
+        let delta_tick: f32 = (current_tick - self.last_tick) as f32;
+        self.last_tick = current_tick;
 
         let mouse = MouseState::new(e);
 
@@ -81,8 +100,8 @@ impl PlayerController {
         let center_x: i32 = width as i32 / 2;
         let center_y: i32 = height as i32 / 2;
 
-        player.pitch += Deg(game_config::ROTATE_SPEED * (center_x - mouse.x()) as f32);
-        player.yaw += Deg(game_config::ROTATE_SPEED * (center_y - mouse.y()) as f32);
+        player.pitch += Deg(game_config::ROTATE_SPEED * delta_tick * (center_x - mouse.x()) as f32);
+        player.yaw += Deg(game_config::ROTATE_SPEED * delta_tick * (center_y - mouse.y()) as f32);
 
         if player.yaw < Deg(-90f32) {
             player.yaw = Deg(-90f32);
@@ -131,22 +150,22 @@ impl PlayerController {
         };
 
         if keyboard.is_scancode_pressed(Scancode::W) {
-            player.position += front_on_ground * game_config::MOVE_SPEED;
+            player.position += front_on_ground * game_config::MOVE_SPEED * delta_tick;
         }
         if keyboard.is_scancode_pressed(Scancode::S) {
-            player.position -= front_on_ground * game_config::MOVE_SPEED;
+            player.position -= front_on_ground * game_config::MOVE_SPEED * delta_tick;
         }
         if keyboard.is_scancode_pressed(Scancode::D) {
-            player.position += player.right * game_config::MOVE_SPEED;
+            player.position += player.right * game_config::MOVE_SPEED * delta_tick;
         }
         if keyboard.is_scancode_pressed(Scancode::A) {
-            player.position -= player.right * game_config::MOVE_SPEED;
+            player.position -= player.right * game_config::MOVE_SPEED * delta_tick;
         }
         if keyboard.is_scancode_pressed(Scancode::Space) {
-            player.position += up_on_ground * game_config::MOVE_SPEED;
+            player.position += up_on_ground * game_config::MOVE_SPEED * delta_tick;
         }
         if keyboard.is_scancode_pressed(Scancode::LShift) {
-            player.position -= up_on_ground * game_config::MOVE_SPEED;
+            player.position -= up_on_ground * game_config::MOVE_SPEED * delta_tick;
         }
 
         // マウスを中心に戻す

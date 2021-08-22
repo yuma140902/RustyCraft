@@ -154,6 +154,8 @@ fn main() {
 
     let mut player = Player::new();
     println!("OK: generate Player");
+    let mut controller = PlayerController::new(&timer_subsystem);
+    println!("OK: init player controller");
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
 
@@ -212,7 +214,7 @@ fn main() {
             }
         }
         if !pause {
-            PlayerController::update_player(&mut player, &sdl, &window, &event_pump);
+            controller.update_player(&mut player, &sdl, &window, &event_pump, &timer_subsystem);
         }
 
         unsafe {
