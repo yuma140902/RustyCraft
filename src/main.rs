@@ -7,12 +7,15 @@ use cgmath::prelude::SquareMatrix;
 use gl::types::*;
 use gl::Gl;
 
-mod camera_computer;
-mod game_config;
-mod image_manager;
-mod player;
-mod shader;
-mod vertex;
+pub mod block;
+pub mod block_renderer;
+pub mod camera_computer;
+pub mod game_config;
+pub mod image_manager;
+pub mod player;
+pub mod shader;
+pub mod vertex;
+pub mod world;
 use camera_computer::CameraComputer;
 use image_manager::ImageManager;
 use player::Player;
@@ -20,6 +23,9 @@ use player::PlayerController;
 use shader::Program;
 use shader::Shader;
 use vertex::Vertex;
+use world::World;
+
+use crate::block_renderer::BlockRenderer;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -164,6 +170,9 @@ fn main() {
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
 
+    let mut world = World::new();
+    println!("OK: generate world");
+
     /* デバッグ用 */
     let mut depth_test = true;
     let mut blend = true;
@@ -260,7 +269,7 @@ fn main() {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let model_matrix = Matrix4::identity();
+        let model_matrix = BlockRenderer::model_matrix(0, 1, 0);
         let view_matrix = camera.compute_view_matrix(&player);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
