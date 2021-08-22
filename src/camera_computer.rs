@@ -1,13 +1,3 @@
-use sdl2::keyboard::{KeyboardState, Scancode};
-use sdl2::mouse::MouseState;
-use sdl2::video::Window;
-use sdl2::{EventPump, Sdl};
-
-use cgmath::Deg;
-use cgmath::Zero;
-use cgmath::{Angle, InnerSpace};
-
-use crate::game_config;
 use crate::player::Player;
 
 #[allow(unused)]
