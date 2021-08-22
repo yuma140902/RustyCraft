@@ -193,7 +193,6 @@ fn main() {
         y: 0.2,
         z: 0.2,
     };
-    let mut pause = false;
 
     'main: loop {
         for event in event_pump.poll_iter() {
@@ -209,13 +208,17 @@ fn main() {
                 Event::KeyUp {
                     keycode: Some(Keycode::Escape),
                     ..
-                } => pause = !pause,
+                } => {
+                    if !controller.is_paused() {
+                        controller.pause();
+                    } else {
+                        controller.resume();
+                    }
+                }
                 _ => {}
             }
         }
-        if !pause {
-            controller.update_player(&mut player, &sdl, &window, &event_pump, &timer_subsystem);
-        }
+        controller.update_player(&mut player, &sdl, &window, &event_pump, &timer_subsystem);
 
         unsafe {
             if depth_test {
@@ -324,7 +327,7 @@ fn main() {
                 ui.text(format!("Position: {:?}", player.position()));
                 ui.text(format!("Pitch: {:?}", player.pitch()));
                 ui.text(format!("Yaw: {:?}", player.yaw()));
-                ui.text(format!("Pause: {}", pause));
+                ui.text(format!("Pause: {}", controller.is_paused()));
             });
         imgui::Window::new(im_str!("Light"))
             .size([300.0, 450.0], imgui::Condition::FirstUseEver)

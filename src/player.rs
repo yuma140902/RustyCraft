@@ -68,12 +68,14 @@ impl Player {
 
 pub struct PlayerController {
     last_tick: u32,
+    paused: bool,
 }
 
 impl PlayerController {
     pub fn new(time: &TimerSubsystem) -> PlayerController {
         PlayerController {
             last_tick: time.ticks(),
+            paused: false,
         }
     }
 
@@ -93,6 +95,10 @@ impl PlayerController {
         let current_tick = time.ticks();
         let delta_tick: f32 = (current_tick - self.last_tick) as f32;
         self.last_tick = current_tick;
+
+        if self.paused {
+            return;
+        }
 
         let mouse = MouseState::new(e);
 
@@ -170,5 +176,20 @@ impl PlayerController {
 
         // マウスを中心に戻す
         sdl.mouse().warp_mouse_in_window(window, center_x, center_y);
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.paused
+    }
+
+    pub fn pause(&mut self) {
+        self.paused = true;
+    }
+
+    pub fn resume(&mut self) {
+        self.paused = false;
+        // let (width, height) = window.drawable_size();
+        // sdl.mouse()
+        //     .warp_mouse_in_window(&window, width as i32 / 2, height as i32 / 2);
     }
 }
