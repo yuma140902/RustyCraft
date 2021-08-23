@@ -8,7 +8,7 @@ use gl::types::*;
 use gl::Gl;
 
 pub mod block;
-pub mod block_renderer;
+pub mod buffer_builder;
 pub mod camera_computer;
 pub mod game_config;
 pub mod image_manager;
@@ -16,6 +16,7 @@ pub mod player;
 pub mod shader;
 pub mod vertex;
 pub mod world;
+use buffer_builder::BufferBuilder;
 use camera_computer::CameraComputer;
 use image_manager::ImageManager;
 use player::Player;
@@ -24,8 +25,6 @@ use shader::Program;
 use shader::Shader;
 use vertex::Vertex;
 use world::World;
-
-use crate::block_renderer::BlockRenderer;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -74,62 +73,35 @@ fn main() {
     let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
     println!("OK: shader program");
 
-    #[rustfmt::skip]
-    let vertex_buffer: [f32; 36*8] = [
-        // 1
-        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, /*1.0*/0.0,
-        0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0,
-        1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
-
-        0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0,
-        1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
-        1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0, 1.0,
-
-        // 2
-        0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0,
-
-        0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0,
-        1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 1.0,
-
-        // 3
-        0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-        1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
-
-        0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-        1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-
-        // 4
-        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-        1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
-
-        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-        1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
-        1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-
-        // 5
-        1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-
-        1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0,
-        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-        1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0,
-
-        // 6
-        0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0,
-
-        0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0,
-    ];
+    let mut buffer_builder = BufferBuilder::new();
+    {
+        buffer_builder.add_cuboid(
+            &Point3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            &Point3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        );
+        buffer_builder.add_cuboid(
+            &Point3 {
+                x: 1.2,
+                y: 0.0,
+                z: 0.0,
+            },
+            &Point3 {
+                x: 2.0,
+                y: 0.5,
+                z: 1.5,
+            },
+        );
+    }
+    let vertex_num = buffer_builder.vertex_num();
+    let vertex_buffer = buffer_builder.buffer();
 
     let vertex_obj = Vertex::new(
         gl.clone(),
@@ -140,7 +112,7 @@ fn main() {
         vec![gl::FLOAT, gl::FLOAT, gl::FLOAT],
         vec![3, 3, 2],
         ((3 + 3 + 2) * mem::size_of::<GLfloat>()) as _,
-        36,
+        vertex_num,
     );
     println!("OK: init main VBO and VAO");
 
@@ -269,7 +241,7 @@ fn main() {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let model_matrix = BlockRenderer::model_matrix(0, 1, 0);
+        let model_matrix = Matrix4::identity();
         let view_matrix = camera.compute_view_matrix(&player);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
@@ -301,7 +273,7 @@ fn main() {
 
         unsafe {
             gl.BindTexture(gl::TEXTURE_2D, surface_texture_id);
-            vertex_obj.draw();
+            vertex_obj.draw_triangles();
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 

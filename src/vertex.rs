@@ -66,11 +66,15 @@ impl Vertex {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, draw_mode: GLenum) {
         unsafe {
             self.gl.BindVertexArray(self.vao);
-            self.gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_num);
+            self.gl.DrawArrays(draw_mode, 0, self.vertex_num);
             self.gl.BindVertexArray(0);
         }
+    }
+
+    pub fn draw_triangles(&self) {
+        self.draw(gl::TRIANGLES);
     }
 }
