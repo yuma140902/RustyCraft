@@ -47,6 +47,12 @@ pub const EAST: Vector3 = Vector3 {
     z: -1.0,
 };
 
+const BLOCK_SIZE: Vector3 = Vector3 {
+    x: 1.0,
+    y: 1.0,
+    z: 1.0,
+};
+
 pub struct BufferBuilder {
     buffer: Vec<f32>,
     vertex_num: i32,
@@ -60,11 +66,20 @@ impl BufferBuilder {
         }
     }
 
-    pub fn new_with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
             buffer: Vec::<f32>::with_capacity(capacity),
             vertex_num: 0,
         }
+    }
+
+    pub fn add_block(
+        &mut self,
+        begin: &Point3,
+        block: &Block,
+        textures: &HashMap<&str, TextureUV>,
+    ) {
+        self.add_cuboid(begin, &(begin + BLOCK_SIZE), block, textures);
     }
 
     // beginはendよりも(-∞, -∞, -∞)に近い

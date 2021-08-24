@@ -8,6 +8,7 @@ pub enum Side {
 }
 
 // TODO:外部ファイルでブロックの一覧を宣言するようにしたい
+#[derive(Clone, Copy)]
 pub enum Block {
     GrassBlock,
 }

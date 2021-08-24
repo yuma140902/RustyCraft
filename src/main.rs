@@ -8,14 +8,15 @@ use gl::Gl;
 pub mod block;
 pub mod buffer_builder;
 pub mod camera_computer;
+pub mod chunk;
 pub mod game_config;
 pub mod player;
 pub mod shader;
 pub mod texture;
 pub mod vertex;
 use block::Block;
-use buffer_builder::BufferBuilder;
 use camera_computer::CameraComputer;
+use chunk::Chunk;
 use player::Player;
 use player::PlayerController;
 use shader::Program;
@@ -99,39 +100,12 @@ fn main() {
     let block_textures =
         block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
 
-    let mut buffer_builder = BufferBuilder::new();
-    {
-        buffer_builder.add_cuboid(
-            &Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            &Point3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            &Block::GrassBlock,
-            &block_textures,
-        );
-        buffer_builder.add_cuboid(
-            &Point3 {
-                x: 1.2,
-                y: 0.0,
-                z: 0.0,
-            },
-            &Point3 {
-                x: 2.0,
-                y: 0.5,
-                z: 1.5,
-            },
-            &Block::GrassBlock,
-            &block_textures,
-        );
+    let mut chunk = Chunk::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 });
+    for i in 0..16 {
+        chunk.set_block(&Block::GrassBlock, i, i, i);
     }
 
-    let vertex_obj = buffer_builder.generate_vertex_obj(&gl);
+    let vertex_obj = chunk.generate_vertex_obj(&gl, &block_textures);
     println!("OK: init main VBO and VAO");
 
     let mut player = Player::new();
