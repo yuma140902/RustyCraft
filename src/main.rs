@@ -8,14 +8,15 @@ use gl::types::*;
 use gl::Gl;
 
 pub mod block;
+pub mod block_texture;
 pub mod buffer_builder;
 pub mod camera_computer;
 pub mod game_config;
 pub mod image_manager;
 pub mod player;
 pub mod shader;
+pub mod texture_atlas;
 pub mod vertex;
-pub mod world;
 use buffer_builder::BufferBuilder;
 use camera_computer::CameraComputer;
 use image_manager::ImageManager;
@@ -24,7 +25,6 @@ use player::PlayerController;
 use shader::Program;
 use shader::Shader;
 use vertex::Vertex;
-use world::World;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -64,9 +64,19 @@ fn main() {
 
     let mut image_manager = ImageManager::new(gl.clone());
     println!("OK: init ImageManager");
-    image_manager.load_image(Path::new("rsc/image/surface.png"), "surface", true);
-    let surface_texture_id = image_manager.get_texture_id("surface");
-    println!("OK: load surface.png : {}", surface_texture_id);
+    let block_atlas_tex = image_manager
+        .load_image(
+            Path::new("rsc/image/atlas/blocks.png"),
+            "atlas/blocks",
+            true,
+        )
+        .unwrap();
+    println!(
+        "OK: load {} {}x{}, #{}",
+        block_atlas_tex.id, block_atlas_tex.width, block_atlas_tex.height, block_atlas_tex.gl_id
+    );
+    let block_textures =
+        block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
 
     let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
     let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
@@ -86,6 +96,8 @@ fn main() {
                 y: 1.0,
                 z: 1.0,
             },
+            &block::blocks::GRASS_BLOCK,
+            &block_textures,
         );
         buffer_builder.add_cuboid(
             &Point3 {
@@ -98,6 +110,8 @@ fn main() {
                 y: 0.5,
                 z: 1.5,
             },
+            &block::blocks::GRASS_BLOCK,
+            &block_textures,
         );
     }
     let vertex_num = buffer_builder.vertex_num();
@@ -141,9 +155,6 @@ fn main() {
     println!("OK: init player controller");
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
-
-    let mut world = World::new();
-    println!("OK: generate world");
 
     /* デバッグ用 */
     let mut depth_test = true;
@@ -272,7 +283,7 @@ fn main() {
         }
 
         unsafe {
-            gl.BindTexture(gl::TEXTURE_2D, surface_texture_id);
+            gl.BindTexture(gl::TEXTURE_2D, block_atlas_tex.gl_id);
             vertex_obj.draw_triangles();
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }

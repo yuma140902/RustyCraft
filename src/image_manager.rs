@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::os::raw::c_void;
 use std::path::Path;
 
-use image::GenericImageView;
+use image::{GenericImageView, ImageError};
 
 use gl::Gl;
 
@@ -20,12 +20,13 @@ impl ImageManager {
         image_manager
     }
 
-    pub fn load_image(&mut self, path: &Path, id: &str, vflip: bool) -> bool {
-        if !path.exists() {
-            return false;
-        }
-
-        let mut image = image::open(path).expect("failed to load image");
+    pub fn load_image<'a>(
+        &mut self,
+        path: &Path,
+        id: &'a str,
+        vflip: bool,
+    ) -> Result<ImageLoadInfo<'a>, ImageError> {
+        let mut image = image::open(path)?;
         let format = match image {
             image::DynamicImage::ImageLuma8(_) => gl::RED,
             image::DynamicImage::ImageLumaA8(_) => gl::RG,
@@ -56,7 +57,7 @@ impl ImageManager {
             self.gl
                 .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             self.gl
-                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                .TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
             self.gl.TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -74,10 +75,22 @@ impl ImageManager {
 
         self.image_map.insert(id.to_string(), texture);
 
-        true
+        Ok(ImageLoadInfo {
+            gl_id: texture,
+            id,
+            width: image.width(),
+            height: image.height(),
+        })
     }
 
     pub fn get_texture_id(&mut self, id: &str) -> u32 {
         *self.image_map.get(id).expect("failed to get texture")
     }
+}
+
+pub struct ImageLoadInfo<'a> {
+    pub gl_id: u32,
+    pub id: &'a str,
+    pub width: u32,
+    pub height: u32,
 }

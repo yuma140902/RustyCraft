@@ -1,4 +1,11 @@
+use std::collections::HashMap;
+
 use cgmath::InnerSpace;
+
+use crate::{
+    block::{Block, Side},
+    texture_atlas::TextureUV,
+};
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -60,7 +67,13 @@ impl BufferBuilder {
     }
 
     // beginはendよりも(-∞, -∞, -∞)に近い
-    pub fn add_cuboid(&mut self, begin: &Point3, end: &Point3) {
+    pub fn add_cuboid(
+        &mut self,
+        begin: &Point3,
+        end: &Point3,
+        block: &dyn Block,
+        textures: &HashMap<&str, TextureUV>,
+    ) {
         // 上面
         self.add_face(
             &Point3 {
@@ -79,6 +92,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
+            &textures[block.get_texture_uv(Side::TOP)],
         );
 
         // 下面
@@ -99,6 +113,7 @@ impl BufferBuilder {
                 z: end.z,
             },
             &begin,
+            &textures[block.get_texture_uv(Side::BOTTOM)],
         );
 
         // 南
@@ -123,6 +138,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: end.z,
             },
+            &textures[block.get_texture_uv(Side::SOUTH)],
         );
 
         // 北
@@ -147,6 +163,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
+            &textures[block.get_texture_uv(Side::NORTH)],
         );
 
         // 西
@@ -171,6 +188,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
+            &textures[block.get_texture_uv(Side::WEST)],
         );
 
         // 東
@@ -195,21 +213,22 @@ impl BufferBuilder {
                 y: end.y,
                 z: end.z,
             },
+            &textures[block.get_texture_uv(Side::EAST)],
         );
     }
 
     // p1: 左上, p2: 左下, p3: 右下, p4: 右上
-    pub fn add_face(&mut self, p1: &Point3, p2: &Point3, p3: &Point3, p4: &Point3) {
+    pub fn add_face(&mut self, p1: &Point3, p2: &Point3, p3: &Point3, p4: &Point3, uv: &TextureUV) {
         let normal = (p3 - p1).cross(p2 - p4).normalize();
         #[rustfmt::skip]
         let mut v: Vec<f32> = vec![
-            p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, 0.0, 1.0,/* UVはtodo */
-            p2.x, p2.y, p2.z, normal.x, normal.y, normal.z, 0.0, 0.0,
-            p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, 1.0, 0.0,
+            p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv.begin_u, uv.end_v,/* UVはtodo */
+            p2.x, p2.y, p2.z, normal.x, normal.y, normal.z, uv.begin_u, uv.begin_v,
+            p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv.end_u, uv.begin_v,
 
-            p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, 0.0, 1.0,
-            p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, 1.0, 0.0,
-            p4.x, p4.y, p4.z, normal.x, normal.y, normal.z, 1.0, 1.0,
+            p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv.begin_u, uv.end_v,
+            p3.x, p3.y, p3.z, normal.x, normal.y, normal.z, uv.end_u, uv.begin_v,
+            p4.x, p4.y, p4.z, normal.x, normal.y, normal.z, uv.end_u, uv.end_v,
         ];
 
         self.vertex_num += 6;
