@@ -5,7 +5,7 @@ use gl::{types::GLfloat, Gl};
 
 use crate::{
     block::{Block, Side},
-    texture::texture_atlas::TextureUV,
+    texture::{block_texture, texture_atlas::TextureUV},
     vertex::Vertex,
 };
 
@@ -68,11 +68,11 @@ impl BufferBuilder {
     }
 
     // beginはendよりも(-∞, -∞, -∞)に近い
-    pub fn add_cuboid<T: Block>(
+    pub fn add_cuboid(
         &mut self,
         begin: &Point3,
         end: &Point3,
-        block: &T,
+        block: &Block,
         textures: &HashMap<&str, TextureUV>,
     ) {
         // 上面
@@ -93,7 +93,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
-            &textures[block.get_texture_uv(Side::TOP)],
+            &textures[block_texture::get_texture_name(block, Side::TOP)],
         );
 
         // 下面
@@ -114,7 +114,7 @@ impl BufferBuilder {
                 z: end.z,
             },
             &begin,
-            &textures[block.get_texture_uv(Side::BOTTOM)],
+            &textures[block_texture::get_texture_name(block, Side::BOTTOM)],
         );
 
         // 南
@@ -139,7 +139,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: end.z,
             },
-            &textures[block.get_texture_uv(Side::SOUTH)],
+            &textures[block_texture::get_texture_name(block, Side::SOUTH)],
         );
 
         // 北
@@ -164,7 +164,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
-            &textures[block.get_texture_uv(Side::NORTH)],
+            &textures[block_texture::get_texture_name(block, Side::NORTH)],
         );
 
         // 西
@@ -189,7 +189,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: begin.z,
             },
-            &textures[block.get_texture_uv(Side::WEST)],
+            &textures[block_texture::get_texture_name(block, Side::WEST)],
         );
 
         // 東
@@ -214,7 +214,7 @@ impl BufferBuilder {
                 y: end.y,
                 z: end.z,
             },
-            &textures[block.get_texture_uv(Side::EAST)],
+            &textures[block_texture::get_texture_name(block, Side::EAST)],
         );
     }
 

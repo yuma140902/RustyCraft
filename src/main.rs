@@ -13,6 +13,7 @@ pub mod player;
 pub mod shader;
 pub mod texture;
 pub mod vertex;
+use block::Block;
 use buffer_builder::BufferBuilder;
 use camera_computer::CameraComputer;
 use player::Player;
@@ -58,61 +59,10 @@ fn main() {
     let gl = Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
     println!("OK: init GL context");
 
-    let mut image_manager = ImageManager::new(gl.clone());
-    println!("OK: init ImageManager");
-    let block_atlas_tex = image_manager
-        .load_image(
-            Path::new("rsc/image/atlas/blocks.png"),
-            "atlas/blocks",
-            true,
-        )
-        .unwrap();
-    println!(
-        "OK: load {} {}x{}, #{}",
-        block_atlas_tex.id, block_atlas_tex.width, block_atlas_tex.height, block_atlas_tex.gl_id
-    );
-    let block_textures =
-        block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
-
     let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
     let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
     let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
     println!("OK: shader program");
-
-    let mut buffer_builder = BufferBuilder::new();
-    {
-        buffer_builder.add_cuboid(
-            &Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            &Point3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            &block::blocks::GRASS_BLOCK,
-            &block_textures,
-        );
-        buffer_builder.add_cuboid(
-            &Point3 {
-                x: 1.2,
-                y: 0.0,
-                z: 0.0,
-            },
-            &Point3 {
-                x: 2.0,
-                y: 0.5,
-                z: 1.5,
-            },
-            &block::blocks::GRASS_BLOCK,
-            &block_textures,
-        );
-    }
-
-    let vertex_obj = buffer_builder.generate_vertex_obj(&gl);
-    println!("OK: init main VBO and VAO");
 
     let mut imgui = imgui::Context::create();
     imgui.set_ini_filename(None);
@@ -132,6 +82,57 @@ fn main() {
 
     let mut event_pump = sdl.event_pump().unwrap();
     println!("OK: init event pump");
+
+    let mut image_manager = ImageManager::new(gl.clone());
+    println!("OK: init ImageManager");
+    let block_atlas_tex = image_manager
+        .load_image(
+            Path::new("rsc/image/atlas/blocks.png"),
+            "atlas/blocks",
+            true,
+        )
+        .unwrap();
+    println!(
+        "OK: load {} {}x{}, #{}",
+        block_atlas_tex.id, block_atlas_tex.width, block_atlas_tex.height, block_atlas_tex.gl_id
+    );
+    let block_textures =
+        block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
+
+    let mut buffer_builder = BufferBuilder::new();
+    {
+        buffer_builder.add_cuboid(
+            &Point3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            &Point3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            &Block::GrassBlock,
+            &block_textures,
+        );
+        buffer_builder.add_cuboid(
+            &Point3 {
+                x: 1.2,
+                y: 0.0,
+                z: 0.0,
+            },
+            &Point3 {
+                x: 2.0,
+                y: 0.5,
+                z: 1.5,
+            },
+            &Block::GrassBlock,
+            &block_textures,
+        );
+    }
+
+    let vertex_obj = buffer_builder.generate_vertex_obj(&gl);
+    println!("OK: init main VBO and VAO");
 
     let mut player = Player::new();
     println!("OK: generate Player");
