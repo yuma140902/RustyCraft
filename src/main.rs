@@ -14,6 +14,7 @@ pub mod player;
 pub mod shader;
 pub mod texture;
 pub mod vertex;
+pub mod world;
 use block::Block;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
@@ -24,6 +25,7 @@ use shader::Program;
 use shader::Shader;
 use texture::block_texture;
 use texture::image_manager::ImageManager;
+use world::World;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -101,12 +103,18 @@ fn main() {
     let block_textures =
         block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
 
-    let mut chunk = Chunk::new(ChunkPos::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 }));
+    let chunk_zero_pos = ChunkPos::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 });
+    let mut chunk = Chunk::new(chunk_zero_pos);
     for i in 0..16 {
         chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, i).unwrap());
     }
+    let mut world = World::new();
+    world.add_chunk(chunk).unwrap();
 
-    let vertex_obj = chunk.generate_vertex_obj(&gl, &block_textures);
+    let vertex_obj = world
+        .get_chunk(&chunk_zero_pos)
+        .unwrap()
+        .generate_vertex_obj(&gl, &block_textures);
     println!("OK: init main VBO and VAO");
 
     let mut player = Player::new();
@@ -212,7 +220,7 @@ fn main() {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let model_matrix = Matrix4::identity();
+        let model_matrix = Matrix4::from_scale(0.5f32);
         let view_matrix = camera.compute_view_matrix(&player);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),

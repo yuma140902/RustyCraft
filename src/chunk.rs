@@ -22,6 +22,10 @@ impl Chunk {
         }
     }
 
+    pub fn position(&self) -> &ChunkPos {
+        &self.position
+    }
+
     pub fn set_block(&mut self, block: &Block, pos: &BlockPosInChunk) {
         let _old = std::mem::replace(&mut self.blocks[pos.index()], Some(*block));
     }

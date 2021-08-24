@@ -1,7 +1,12 @@
 use std::ops::Deref;
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct BlockPosInChunk(cgmath::Point3<u32>);
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct ChunkPos(cgmath::Point3<i32>);
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct BlockPosInWorld(cgmath::Point3<i32>);
 pub type BlockPos = BlockPosInWorld;
 
