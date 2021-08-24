@@ -349,15 +349,15 @@ fn main() {
 
                 ui.separator();
 
-                #[rustfmt::skip]
-                    imgui::Slider::new(im_str!("Ambient R")).range(0.0..=1.0)
-                        .build(&ui, &mut ambient.x);
-                #[rustfmt::skip]
-                    imgui::Slider::new(im_str!("Ambient G")).range(0.0..=1.0)
-                        .build(&ui, &mut ambient.y);
-                #[rustfmt::skip]
-                    imgui::Slider::new(im_str!("Ambient B")).range(0.0..=1.0)
-                        .build(&ui, &mut ambient.z);
+                imgui::Slider::new(im_str!("Ambient R"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut ambient.x);
+                imgui::Slider::new(im_str!("Ambient G"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut ambient.y);
+                imgui::Slider::new(im_str!("Ambient B"))
+                    .range(0.0..=1.0)
+                    .build(&ui, &mut ambient.z);
 
                 ui.separator();
 
