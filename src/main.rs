@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use cgmath;
-use cgmath::prelude::SquareMatrix;
 
 use gl::Gl;
 
@@ -10,6 +9,7 @@ pub mod buffer_builder;
 pub mod camera_computer;
 pub mod chunk;
 pub mod game_config;
+pub mod mymath;
 pub mod player;
 pub mod shader;
 pub mod texture;
@@ -17,6 +17,7 @@ pub mod vertex;
 use block::Block;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
+use mymath::*;
 use player::Player;
 use player::PlayerController;
 use shader::Program;
@@ -100,9 +101,9 @@ fn main() {
     let block_textures =
         block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
 
-    let mut chunk = Chunk::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 });
+    let mut chunk = Chunk::new(ChunkPos::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 }));
     for i in 0..16 {
-        chunk.set_block(&Block::GrassBlock, i, i, i);
+        chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, i).unwrap());
     }
 
     let vertex_obj = chunk.generate_vertex_obj(&gl, &block_textures);

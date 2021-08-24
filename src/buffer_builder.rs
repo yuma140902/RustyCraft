@@ -5,6 +5,7 @@ use gl::{types::GLfloat, Gl};
 
 use crate::{
     block::{Block, Side},
+    mymath::BlockPosInWorld,
     texture::{block_texture, texture_atlas::TextureUV},
     vertex::Vertex,
 };
@@ -75,11 +76,12 @@ impl BufferBuilder {
 
     pub fn add_block(
         &mut self,
-        begin: &Point3,
+        begin: &BlockPosInWorld,
         block: &Block,
         textures: &HashMap<&str, TextureUV>,
     ) {
-        self.add_cuboid(begin, &(begin + BLOCK_SIZE), block, textures);
+        let begin = begin.cast::<f32>().unwrap();
+        self.add_cuboid(&begin, &(begin + BLOCK_SIZE), block, textures);
     }
 
     // beginはendよりも(-∞, -∞, -∞)に近い
