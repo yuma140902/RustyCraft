@@ -1,10 +1,8 @@
-use std::mem;
 use std::path::Path;
 
 use cgmath;
 use cgmath::prelude::SquareMatrix;
 
-use gl::types::*;
 use gl::Gl;
 
 pub mod block;
@@ -24,7 +22,6 @@ use player::Player;
 use player::PlayerController;
 use shader::Program;
 use shader::Shader;
-use vertex::Vertex;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -114,20 +111,8 @@ fn main() {
             &block_textures,
         );
     }
-    let vertex_num = buffer_builder.vertex_num();
-    let vertex_buffer = buffer_builder.buffer();
 
-    let vertex_obj = Vertex::new(
-        gl.clone(),
-        (vertex_buffer.len() * mem::size_of::<GLfloat>()) as _,
-        vertex_buffer.as_ptr() as _,
-        gl::STATIC_DRAW,
-        3usize,
-        vec![gl::FLOAT, gl::FLOAT, gl::FLOAT],
-        vec![3, 3, 2],
-        ((3 + 3 + 2) * mem::size_of::<GLfloat>()) as _,
-        vertex_num,
-    );
+    let vertex_obj = buffer_builder.generate_vertex_obj(&gl);
     println!("OK: init main VBO and VAO");
 
     let mut imgui = imgui::Context::create();

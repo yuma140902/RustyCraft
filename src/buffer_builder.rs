@@ -1,10 +1,12 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 use cgmath::InnerSpace;
+use gl::{types::GLfloat, Gl};
 
 use crate::{
     block::{Block, Side},
     texture_atlas::TextureUV,
+    vertex::Vertex,
 };
 
 #[allow(unused)]
@@ -56,14 +58,6 @@ impl BufferBuilder {
             buffer: Vec::<f32>::new(),
             vertex_num: 0,
         }
-    }
-
-    pub fn buffer(self) -> Vec<f32> {
-        self.buffer
-    }
-
-    pub fn vertex_num(&self) -> i32 {
-        self.vertex_num
     }
 
     // beginはendよりも(-∞, -∞, -∞)に近い
@@ -234,5 +228,19 @@ impl BufferBuilder {
         self.vertex_num += 6;
 
         self.buffer.append(&mut v);
+    }
+
+    pub fn generate_vertex_obj(self, gl: &Gl) -> Vertex {
+        Vertex::new(
+            gl.clone(),
+            (self.buffer.len() * mem::size_of::<GLfloat>()) as _,
+            self.buffer.as_ptr() as _,
+            gl::STATIC_DRAW,
+            3usize,
+            vec![gl::FLOAT, gl::FLOAT, gl::FLOAT],
+            vec![3, 3, 2],
+            ((3 + 3 + 2) * mem::size_of::<GLfloat>()) as _,
+            self.vertex_num,
+        )
     }
 }
