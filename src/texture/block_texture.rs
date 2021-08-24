@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::texture_atlas::TextureUV;
+use super::texture_atlas::TextureUV;
 
 pub fn get_textures_in_atlas(
     atlas_width: u32,

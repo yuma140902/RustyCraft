@@ -5,7 +5,7 @@ use gl::{types::GLfloat, Gl};
 
 use crate::{
     block::{Block, Side},
-    texture_atlas::TextureUV,
+    texture::texture_atlas::TextureUV,
     vertex::Vertex,
 };
 

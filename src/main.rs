@@ -6,22 +6,21 @@ use cgmath::prelude::SquareMatrix;
 use gl::Gl;
 
 pub mod block;
-pub mod block_texture;
 pub mod buffer_builder;
 pub mod camera_computer;
 pub mod game_config;
-pub mod image_manager;
 pub mod player;
 pub mod shader;
-pub mod texture_atlas;
+pub mod texture;
 pub mod vertex;
 use buffer_builder::BufferBuilder;
 use camera_computer::CameraComputer;
-use image_manager::ImageManager;
 use player::Player;
 use player::PlayerController;
 use shader::Program;
 use shader::Shader;
+use texture::block_texture;
+use texture::image_manager::ImageManager;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
