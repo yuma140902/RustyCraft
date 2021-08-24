@@ -60,12 +60,19 @@ impl BufferBuilder {
         }
     }
 
+    pub fn new_with_capacity(capacity: usize) -> Self {
+        Self {
+            buffer: Vec::<f32>::with_capacity(capacity),
+            vertex_num: 0,
+        }
+    }
+
     // beginはendよりも(-∞, -∞, -∞)に近い
-    pub fn add_cuboid(
+    pub fn add_cuboid<T: Block>(
         &mut self,
         begin: &Point3,
         end: &Point3,
-        block: &dyn Block,
+        block: &T,
         textures: &HashMap<&str, TextureUV>,
     ) {
         // 上面
