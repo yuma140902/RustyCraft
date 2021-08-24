@@ -1,5 +1,3 @@
 /target
-/gnu-mingw
-/msvc
 /*.dll
 /lib/*/target
