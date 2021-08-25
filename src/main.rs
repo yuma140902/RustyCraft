@@ -1,8 +1,14 @@
 use std::path::Path;
 
 use cgmath;
-
 use gl::Gl;
+use imgui_sdl2::ImguiSdl2;
+use sdl2::video::GLContext;
+use sdl2::video::Window;
+use sdl2::EventPump;
+use sdl2::Sdl;
+use sdl2::TimerSubsystem;
+use sdl2::VideoSubsystem;
 
 pub mod block;
 pub mod buffer_builder;
@@ -24,6 +30,8 @@ use player::PlayerController;
 use shader::Program;
 use shader::Shader;
 use texture::block_texture;
+use texture::block_texture::BlockTextures;
+use texture::image_manager::ImageLoadInfo;
 use texture::image_manager::ImageManager;
 use world::World;
 
@@ -34,92 +42,142 @@ type Vector3 = cgmath::Vector3<f32>;
 #[allow(unused)]
 type Matrix4 = cgmath::Matrix4<f32>;
 
-fn main() {
-    let sdl = sdl2::init().unwrap();
-    println!("OK: init SDL2: {}", sdl2::version::version());
-    let video_subsystem = sdl.video().unwrap();
-    println!("OK: init SDL2 Video Subsystem");
-    let timer_subsystem = sdl.timer().unwrap();
-    println!("OK: init SDL2 Timer Subsystem");
+struct Game<'a> {
+    sdl: Sdl,
+    video_subsystem: VideoSubsystem,
+    timer_subsystem: TimerSubsystem,
+    window: Window,
+    _gl_context: GLContext, /* GLContextを誰かが所有していないとOpenGLを使えない */
+    gl: Gl,
+    shader: Program,
+    imgui: imgui::Context,
+    imgui_sdl2: ImguiSdl2,
+    imgui_renderer: imgui_opengl_renderer::Renderer,
+    event_pump: EventPump,
+    image_manager: ImageManager,
+    block_atlas_texture: ImageLoadInfo<'a>,
+    block_textures: BlockTextures,
+    world: World,
+}
 
-    {
-        let gl_attr = video_subsystem.gl_attr();
-        gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-        gl_attr.set_context_version(3, 3);
-        let (major, minor) = gl_attr.context_version();
-        println!("OK: init OpenGL: version {}.{}", major, minor);
-    }
+impl<'a> Game<'a> {
+    fn init() -> Game<'a> {
+        let sdl = sdl2::init().unwrap();
+        println!("OK: init SDL2: {}", sdl2::version::version());
+        let video_subsystem = sdl.video().unwrap();
+        println!("OK: init SDL2 Video Subsystem");
+        let timer_subsystem = sdl.timer().unwrap();
+        println!("OK: init SDL2 Timer Subsystem");
 
-    let window = video_subsystem
-        .window("SDL", 900, 480)
-        .opengl()
-        .position_centered()
-        .resizable()
-        .build()
-        .unwrap();
-    println!("OK: init window '{}'", window.title());
+        {
+            let gl_attr = video_subsystem.gl_attr();
+            gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+            gl_attr.set_context_version(3, 3);
+            let (major, minor) = gl_attr.context_version();
+            println!("OK: init OpenGL: version {}.{}", major, minor);
+        }
 
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
-    println!("OK: init GL context");
+        let window = video_subsystem
+            .window("SDL", 900, 480)
+            .opengl()
+            .position_centered()
+            .resizable()
+            .build()
+            .unwrap();
+        println!("OK: init window '{}'", window.title());
 
-    let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
-    let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
-    let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
-    println!("OK: shader program");
+        let _gl_context = window.gl_create_context().unwrap();
+        let gl = Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
+        println!("OK: init GL context");
 
-    let mut imgui = imgui::Context::create();
-    imgui.set_ini_filename(None);
+        let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
+        let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
+        let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
+        println!("OK: shader program");
 
-    let mut imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
-    let imgui_renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
-        video_subsystem.gl_get_proc_address(s) as _
-    });
-    {
-        use imgui::im_str;
+        let mut imgui = imgui::Context::create();
+        imgui.set_ini_filename(None);
+        let imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
+        let imgui_renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
+            video_subsystem.gl_get_proc_address(s) as _
+        });
+        {
+            use imgui::im_str;
+            println!(
+                "OK: init ImGui (Platform: {}, Renderer: {})",
+                imgui.platform_name().unwrap_or(im_str!("Unknown")),
+                imgui.renderer_name().unwrap_or(im_str!("Unknown"))
+            );
+        }
+
+        let mut event_pump = sdl.event_pump().unwrap();
+        println!("OK: init event pump");
+
+        let mut image_manager = ImageManager::new(gl.clone());
+        println!("OK: init ImageManager");
+        let block_atlas_texture = image_manager
+            .load_image(
+                Path::new("rsc/image/atlas/blocks.png"),
+                "atlas/blocks",
+                true,
+            )
+            .unwrap();
         println!(
-            "OK: init ImGui (Platform: {}, Renderer: {})",
-            imgui.platform_name().unwrap_or(im_str!("Unknown")),
-            imgui.renderer_name().unwrap_or(im_str!("Unknown"))
+            "OK: load {} {}x{}, #{}",
+            block_atlas_texture.id,
+            block_atlas_texture.width,
+            block_atlas_texture.height,
+            block_atlas_texture.gl_id
         );
+        let block_textures = block_texture::get_textures_in_atlas(
+            block_atlas_texture.width,
+            block_atlas_texture.height,
+        );
+
+        let world = World::new();
+
+        Game {
+            sdl,
+            video_subsystem,
+            timer_subsystem,
+            window,
+            _gl_context,
+            gl,
+            shader,
+            imgui,
+            imgui_sdl2,
+            imgui_renderer,
+            event_pump,
+            image_manager,
+            block_atlas_texture,
+            block_textures,
+            world,
+        }
     }
+}
 
-    let mut event_pump = sdl.event_pump().unwrap();
-    println!("OK: init event pump");
+fn main() {
+    let mut game = Game::init();
 
-    let mut image_manager = ImageManager::new(gl.clone());
-    println!("OK: init ImageManager");
-    let block_atlas_tex = image_manager
-        .load_image(
-            Path::new("rsc/image/atlas/blocks.png"),
-            "atlas/blocks",
-            true,
-        )
-        .unwrap();
-    println!(
-        "OK: load {} {}x{}, #{}",
-        block_atlas_tex.id, block_atlas_tex.width, block_atlas_tex.height, block_atlas_tex.gl_id
-    );
-    let block_textures =
-        block_texture::get_textures_in_atlas(block_atlas_tex.width, block_atlas_tex.height);
+    let gl = &game.gl;
 
     let chunk_zero_pos = ChunkPos::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 });
     let mut chunk = Chunk::new(chunk_zero_pos);
     for i in 0..16 {
         chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, i).unwrap());
     }
-    let mut world = World::new();
-    world.add_chunk(chunk).unwrap();
+    game.world.add_chunk(chunk).unwrap();
 
-    let vertex_obj = world
+    let vertex_obj = game
+        .world
         .get_chunk(&chunk_zero_pos)
         .unwrap()
-        .generate_vertex_obj(&gl, &block_textures);
+        .generate_vertex_obj(&gl, &game.block_textures);
     println!("OK: init main VBO and VAO");
 
     let mut player = Player::new();
     println!("OK: generate Player");
-    let mut controller = PlayerController::new(&timer_subsystem);
+    let mut controller = PlayerController::new(&game.timer_subsystem);
     println!("OK: init player controller");
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
@@ -160,9 +218,9 @@ fn main() {
     };
 
     'main: loop {
-        for event in event_pump.poll_iter() {
-            imgui_sdl2.handle_event(&mut imgui, &event);
-            if imgui_sdl2.ignore_event(&event) {
+        for event in game.event_pump.poll_iter() {
+            game.imgui_sdl2.handle_event(&mut game.imgui, &event);
+            if game.imgui_sdl2.ignore_event(&event) {
                 continue;
             }
 
@@ -183,7 +241,13 @@ fn main() {
                 _ => {}
             }
         }
-        controller.update_player(&mut player, &sdl, &window, &event_pump, &timer_subsystem);
+        controller.update_player(
+            &mut player,
+            &game.sdl,
+            &game.window,
+            &game.event_pump,
+            &game.timer_subsystem,
+        );
 
         unsafe {
             if depth_test {
@@ -212,7 +276,7 @@ fn main() {
             }
         }
 
-        let (width, height) = window.drawable_size();
+        let (width, height) = game.window.drawable_size();
         unsafe {
             gl.Viewport(0, 0, width as i32, height as i32);
 
@@ -231,6 +295,7 @@ fn main() {
 
         unsafe {
             use c_str_macro::c_str;
+            let shader = &game.shader;
             shader.set_used();
             shader.set_mat4(c_str!("uModel"), &model_matrix);
             shader.set_mat4(c_str!("uView"), &view_matrix);
@@ -251,14 +316,18 @@ fn main() {
         }
 
         unsafe {
-            gl.BindTexture(gl::TEXTURE_2D, block_atlas_tex.gl_id);
+            gl.BindTexture(gl::TEXTURE_2D, game.block_atlas_texture.gl_id);
             vertex_obj.draw_triangles();
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 
-        imgui_sdl2.prepare_frame(imgui.io_mut(), &window, &event_pump.mouse_state());
+        game.imgui_sdl2.prepare_frame(
+            game.imgui.io_mut(),
+            &game.window,
+            &game.event_pump.mouse_state(),
+        );
 
-        let ui = imgui.frame();
+        let ui = game.imgui.frame();
         use imgui::im_str;
         imgui::Window::new(im_str!("Information"))
             .size([300.0, 300.0], imgui::Condition::FirstUseEver)
@@ -367,10 +436,10 @@ fn main() {
                     .build(&ui, &mut specular.z);
             });
 
-        imgui_sdl2.prepare_render(&ui, &window);
-        imgui_renderer.render(ui);
+        game.imgui_sdl2.prepare_render(&ui, &game.window);
+        game.imgui_renderer.render(ui);
 
-        window.gl_swap_window();
+        game.window.gl_swap_window();
 
         std::thread::sleep(std::time::Duration::new(0, 1_000_000_000u32 / 60)); // 60FPS
     }

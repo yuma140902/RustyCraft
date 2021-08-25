@@ -4,10 +4,9 @@ use crate::block::{Block, Side};
 
 use super::texture_atlas::TextureUV;
 
-pub fn get_textures_in_atlas(
-    atlas_width: u32,
-    atlas_height: u32,
-) -> HashMap<&'static str, TextureUV> {
+pub type BlockTextures = HashMap<&'static str, TextureUV>;
+
+pub fn get_textures_in_atlas(atlas_width: u32, atlas_height: u32) -> BlockTextures {
     let mut dic = HashMap::new();
     dic.insert(
         "grass_side",
