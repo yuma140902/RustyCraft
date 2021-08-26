@@ -233,6 +233,7 @@ fn main() {
     let mut culling = true;
     let mut alpha: f32 = 1.0;
     let mut is_paused = false;
+    let mut show_imgui = true;
     /* ベクトルではなく色 */
     let mut material_specular = Vector3 {
         x: 0.2,
@@ -280,6 +281,12 @@ fn main() {
                     ..
                 } => {
                     is_paused = !is_paused;
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::F1),
+                    ..
+                } => {
+                    show_imgui = !show_imgui;
                 }
                 _ => {}
             }
@@ -389,132 +396,133 @@ fn main() {
             vertex_obj.draw_triangles();
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
+        if show_imgui {
+            game.imgui_sdl2.prepare_frame(
+                game.imgui.io_mut(),
+                &game.window,
+                &game.event_pump.mouse_state(),
+            );
 
-        game.imgui_sdl2.prepare_frame(
-            game.imgui.io_mut(),
-            &game.window,
-            &game.event_pump.mouse_state(),
-        );
+            let ui = game.imgui.frame();
+            use imgui::im_str;
+            imgui::Window::new(im_str!("Information"))
+                .size([300.0, 300.0], imgui::Condition::FirstUseEver)
+                .position([5.0, 5.0], imgui::Condition::FirstUseEver)
+                .build(&ui, || {
+                    ui.text(im_str!("OpenGL Sandbox 1.0"));
 
-        let ui = game.imgui.frame();
-        use imgui::im_str;
-        imgui::Window::new(im_str!("Information"))
-            .size([300.0, 300.0], imgui::Condition::FirstUseEver)
-            .position([5.0, 5.0], imgui::Condition::FirstUseEver)
-            .build(&ui, || {
-                ui.text(im_str!("OpenGL Sandbox 1.0"));
+                    ui.separator();
 
-                ui.separator();
+                    ui.text(format!("FPS: {:.1}", ui.io().framerate));
+                    let display_size = ui.io().display_size;
+                    ui.text(format!(
+                        "Display Size: ({:.1}, {:.1})",
+                        display_size[0], display_size[1]
+                    ));
+                    let mouse_pos = ui.io().mouse_pos;
+                    ui.text(format!(
+                        "Mouse Position: ({:.1}, {:.1})",
+                        mouse_pos[0], mouse_pos[1]
+                    ));
 
-                ui.text(format!("FPS: {:.1}", ui.io().framerate));
-                let display_size = ui.io().display_size;
-                ui.text(format!(
-                    "Display Size: ({:.1}, {:.1})",
-                    display_size[0], display_size[1]
-                ));
-                let mouse_pos = ui.io().mouse_pos;
-                ui.text(format!(
-                    "Mouse Position: ({:.1}, {:.1})",
-                    mouse_pos[0], mouse_pos[1]
-                ));
+                    ui.separator();
 
-                ui.separator();
+                    ui.checkbox(im_str!("Depth Test"), &mut depth_test);
+                    ui.checkbox(im_str!("Blend"), &mut blend);
+                    ui.checkbox(im_str!("Wireframe"), &mut wireframe);
+                    ui.checkbox(im_str!("Culling"), &mut culling);
 
-                ui.checkbox(im_str!("Depth Test"), &mut depth_test);
-                ui.checkbox(im_str!("Blend"), &mut blend);
-                ui.checkbox(im_str!("Wireframe"), &mut wireframe);
-                ui.checkbox(im_str!("Culling"), &mut culling);
+                    ui.separator();
 
-                ui.separator();
+                    ui.text(format!("Position: {:?}", player_pos.0));
+                    ui.text(format!("Pitch: {:?}", player_angle.pitch()));
+                    ui.text(format!("Yaw: {:?}", player_angle.yaw()));
+                    ui.text(format!("Pause: {}", is_paused));
+                    ui.text(format!(
+                        "Pressed Keys: {:?}",
+                        world
+                            .read_storage::<Input>()
+                            .get(player)
+                            .unwrap()
+                            .pressed_keys
+                    ));
+                });
+            imgui::Window::new(im_str!("Light"))
+                .size([300.0, 450.0], imgui::Condition::FirstUseEver)
+                .position([600.0, 10.0], imgui::Condition::FirstUseEver)
+                .build(&ui, || {
+                    imgui::Slider::new(im_str!("Alpha"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut alpha);
 
-                ui.text(format!("Position: {:?}", player_pos.0));
-                ui.text(format!("Pitch: {:?}", player_angle.pitch()));
-                ui.text(format!("Yaw: {:?}", player_angle.yaw()));
-                ui.text(format!("Pause: {}", is_paused));
-                ui.text(format!(
-                    "Pressed Keys: {:?}",
-                    world
-                        .read_storage::<Input>()
-                        .get(player)
-                        .unwrap()
-                        .pressed_keys
-                ));
-            });
-        imgui::Window::new(im_str!("Light"))
-            .size([300.0, 450.0], imgui::Condition::FirstUseEver)
-            .position([600.0, 10.0], imgui::Condition::FirstUseEver)
-            .build(&ui, || {
-                imgui::Slider::new(im_str!("Alpha"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut alpha);
+                    ui.separator();
 
-                ui.separator();
+                    imgui::Slider::new(im_str!("Material Specular X"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut material_specular.x);
+                    imgui::Slider::new(im_str!("Material Specular Y"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut material_specular.y);
+                    imgui::Slider::new(im_str!("Material Specular Z"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut material_specular.z);
 
-                imgui::Slider::new(im_str!("Material Specular X"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut material_specular.x);
-                imgui::Slider::new(im_str!("Material Specular Y"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut material_specular.y);
-                imgui::Slider::new(im_str!("Material Specular Z"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut material_specular.z);
+                    imgui::Slider::new(im_str!("Material Shininess"))
+                        .range(0.0..=2.0)
+                        .build(&ui, &mut material_shininess);
 
-                imgui::Slider::new(im_str!("Material Shininess"))
-                    .range(0.0..=2.0)
-                    .build(&ui, &mut material_shininess);
+                    ui.separator();
 
-                ui.separator();
+                    imgui::Slider::new(im_str!("Direction X"))
+                        .range(-1.0..=1.0)
+                        .build(&ui, &mut light_direction.x);
+                    imgui::Slider::new(im_str!("Direction Y"))
+                        .range(-1.0..=1.0)
+                        .build(&ui, &mut light_direction.y);
+                    imgui::Slider::new(im_str!("Direction Z"))
+                        .range(-1.0..=1.0)
+                        .build(&ui, &mut light_direction.z);
 
-                imgui::Slider::new(im_str!("Direction X"))
-                    .range(-1.0..=1.0)
-                    .build(&ui, &mut light_direction.x);
-                imgui::Slider::new(im_str!("Direction Y"))
-                    .range(-1.0..=1.0)
-                    .build(&ui, &mut light_direction.y);
-                imgui::Slider::new(im_str!("Direction Z"))
-                    .range(-1.0..=1.0)
-                    .build(&ui, &mut light_direction.z);
+                    ui.separator();
 
-                ui.separator();
+                    imgui::Slider::new(im_str!("Ambient R"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut ambient.x);
+                    imgui::Slider::new(im_str!("Ambient G"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut ambient.y);
+                    imgui::Slider::new(im_str!("Ambient B"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut ambient.z);
 
-                imgui::Slider::new(im_str!("Ambient R"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut ambient.x);
-                imgui::Slider::new(im_str!("Ambient G"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut ambient.y);
-                imgui::Slider::new(im_str!("Ambient B"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut ambient.z);
+                    ui.separator();
 
-                ui.separator();
+                    imgui::Slider::new(im_str!("Diffuse R"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut diffuse.x);
+                    imgui::Slider::new(im_str!("Diffuse G"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut diffuse.y);
+                    imgui::Slider::new(im_str!("Diffuse B"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut diffuse.z);
 
-                imgui::Slider::new(im_str!("Diffuse R"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut diffuse.x);
-                imgui::Slider::new(im_str!("Diffuse G"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut diffuse.y);
-                imgui::Slider::new(im_str!("Diffuse B"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut diffuse.z);
+                    ui.separator();
 
-                ui.separator();
+                    imgui::Slider::new(im_str!("Specular R"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut specular.x);
+                    imgui::Slider::new(im_str!("Specular G"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut specular.y);
+                    imgui::Slider::new(im_str!("Specular B"))
+                        .range(0.0..=1.0)
+                        .build(&ui, &mut specular.z);
+                });
 
-                imgui::Slider::new(im_str!("Specular R"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut specular.x);
-                imgui::Slider::new(im_str!("Specular G"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut specular.y);
-                imgui::Slider::new(im_str!("Specular B"))
-                    .range(0.0..=1.0)
-                    .build(&ui, &mut specular.z);
-            });
-
-        game.imgui_sdl2.prepare_render(&ui, &game.window);
-        game.imgui_renderer.render(ui);
+            game.imgui_sdl2.prepare_render(&ui, &game.window);
+            game.imgui_renderer.render(ui);
+        }
 
         game.window.gl_swap_window();
 
