@@ -4,13 +4,13 @@ use crate::mymath::ChunkPos;
 
 use super::chunk::Chunk;
 
-pub struct World {
+pub struct GameWorld {
     chunks: HashMap<ChunkPos, Chunk>,
 }
 
-impl World {
-    pub fn new() -> World {
-        World {
+impl GameWorld {
+    pub fn new() -> GameWorld {
+        GameWorld {
             chunks: HashMap::new(),
         }
     }

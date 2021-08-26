@@ -1,4 +1,4 @@
-use crate::player::Player;
+use crate::components::{Angle2, Position};
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -14,11 +14,7 @@ impl CameraComputer {
         CameraComputer {}
     }
 
-    pub fn compute_view_matrix(&self, player: &Player) -> Matrix4 {
-        Matrix4::look_at_rh(
-            player.position(),
-            player.position() + player.front(),
-            player.up(),
-        )
+    pub fn compute_view_matrix(&self, angle: &Angle2, pos: &Position) -> Matrix4 {
+        Matrix4::look_at_rh(pos.0, pos.0 + angle.front(), *angle.up())
     }
 }

@@ -3,37 +3,44 @@ use std::path::Path;
 use cgmath;
 use gl::Gl;
 use imgui_sdl2::ImguiSdl2;
+use sdl2::keyboard::KeyboardState;
+use sdl2::mouse::MouseState;
 use sdl2::video::GLContext;
 use sdl2::video::Window;
 use sdl2::EventPump;
 use sdl2::Sdl;
 use sdl2::TimerSubsystem;
 use sdl2::VideoSubsystem;
+use specs::DispatcherBuilder;
+use specs::{Builder, World, WorldExt};
 
 pub mod block;
 pub mod buffer_builder;
 pub mod camera_computer;
 pub mod chunk;
+pub mod components;
+mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
-pub mod player;
 pub mod shader;
+mod systems;
 pub mod texture;
 pub mod vertex;
 pub mod world;
 use block::Block;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
+use components::*;
+use ecs_resources::*;
 use mymath::*;
-use player::Player;
-use player::PlayerController;
 use shader::Program;
 use shader::Shader;
+use systems::*;
 use texture::block_texture;
 use texture::block_texture::BlockTextures;
 use texture::image_manager::ImageLoadInfo;
 use texture::image_manager::ImageManager;
-use world::World;
+use world::GameWorld;
 
 #[allow(unused)]
 type Point3 = cgmath::Point3<f32>;
@@ -57,7 +64,7 @@ struct Game<'a> {
     image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
     block_textures: BlockTextures,
-    world: World,
+    world: GameWorld,
 }
 
 impl<'a> Game<'a> {
@@ -134,7 +141,7 @@ impl<'a> Game<'a> {
             block_atlas_texture.height,
         );
 
-        let world = World::new();
+        let world = GameWorld::new();
 
         Game {
             sdl,
@@ -175,10 +182,40 @@ fn main() {
         .generate_vertex_obj(&gl, &game.block_textures);
     println!("OK: init main VBO and VAO");
 
-    let mut player = Player::new();
-    println!("OK: generate Player");
-    let mut controller = PlayerController::new(&game.timer_subsystem);
-    println!("OK: init player controller");
+    let mut world = World::new();
+    world.register::<Position>();
+    world.register::<Velocity>();
+    world.register::<Angle2>();
+    world.register::<Input>();
+    world.insert(DeltaTick(0));
+    println!("OK: init ECS World");
+    let player = world
+        .create_entity()
+        .with(Position::new(Point3 {
+            x: 2.0,
+            y: 0.5,
+            z: 2.0,
+        }))
+        .with(Velocity::new(Vector3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }))
+        .with(Angle2::new(cgmath::Deg(90.0f32), cgmath::Deg(90.0f32)))
+        .with(Input::new())
+        .build();
+    println!("OK: spawn player");
+    let mut dispatcher = DispatcherBuilder::new()
+        .with(PositionUpdater, "position updater", &[])
+        .with(AngleController, "angle controller", &[])
+        .with(
+            VelocityController,
+            "velocity controller",
+            &["angle controller"],
+        )
+        .build();
+    println!("OK: init ECS Dispatcher");
+
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
 
@@ -188,6 +225,7 @@ fn main() {
     let mut wireframe = false;
     let mut culling = true;
     let mut alpha: f32 = 1.0;
+    let mut is_paused = false;
     /* ベクトルではなく色 */
     let mut material_specular = Vector3 {
         x: 0.2,
@@ -217,6 +255,8 @@ fn main() {
         z: 0.2,
     };
 
+    let mut last_tick = game.timer_subsystem.ticks();
+
     'main: loop {
         for event in game.event_pump.poll_iter() {
             game.imgui_sdl2.handle_event(&mut game.imgui, &event);
@@ -232,22 +272,45 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => {
-                    if !controller.is_paused() {
-                        controller.pause();
-                    } else {
-                        controller.resume();
-                    }
+                    is_paused = !is_paused;
                 }
                 _ => {}
             }
         }
-        controller.update_player(
-            &mut player,
-            &game.sdl,
-            &game.window,
-            &game.event_pump,
-            &game.timer_subsystem,
-        );
+
+        let (width, height) = game.window.drawable_size();
+
+        // DeltaTickリソースを更新
+        {
+            let mut delta_tick = world.write_resource::<DeltaTick>();
+            let current_tick = game.timer_subsystem.ticks();
+            delta_tick.0 = current_tick - last_tick;
+            last_tick = current_tick;
+        }
+        // Inputコンポーネントを更新
+        if !is_paused {
+            let mut input = world.write_storage::<Input>();
+            let mouse = MouseState::new(&game.event_pump);
+            let keyboard = KeyboardState::new(&game.event_pump);
+            let center_x: i32 = width as i32 / 2;
+            let center_y: i32 = height as i32 / 2;
+            *input.get_mut(player).unwrap() = Input {
+                mouse_delta: cgmath::Vector2::<i32> {
+                    x: center_x - mouse.x(),
+                    y: center_y - mouse.y(),
+                },
+                pressed_keys: keyboard.pressed_scancodes().collect(),
+            };
+            // マウスを中心に戻す
+            game.sdl
+                .mouse()
+                .warp_mouse_in_window(&game.window, center_x, center_y);
+        }
+        dispatcher.dispatch(&mut world);
+        let player_pos = world.read_storage::<Position>();
+        let player_pos = player_pos.get(player).unwrap();
+        let player_angle = world.read_storage::<Angle2>();
+        let player_angle = player_angle.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -276,7 +339,6 @@ fn main() {
             }
         }
 
-        let (width, height) = game.window.drawable_size();
         unsafe {
             gl.Viewport(0, 0, width as i32, height as i32);
 
@@ -285,7 +347,7 @@ fn main() {
         }
 
         let model_matrix = Matrix4::from_scale(0.5f32);
-        let view_matrix = camera.compute_view_matrix(&player);
+        let view_matrix = camera.compute_view_matrix(&player_angle, &player_pos);
         let projection_matrix: Matrix4 = cgmath::perspective(
             cgmath::Deg(45.0f32),
             width as f32 / height as f32,
@@ -303,9 +365,9 @@ fn main() {
             shader.set_float(c_str!("uAlpha"), alpha);
             shader.set_vec3(
                 c_str!("uViewPosition"),
-                player.position().x,
-                player.position().y,
-                player.position().z,
+                player_pos.0.x,
+                player_pos.0.y,
+                player_pos.0.z,
             );
             shader.set_vector3(c_str!("uMaterial.specular"), &material_specular);
             shader.set_float(c_str!("uMaterial.shininess"), material_shininess);
@@ -358,10 +420,18 @@ fn main() {
 
                 ui.separator();
 
-                ui.text(format!("Position: {:?}", player.position()));
-                ui.text(format!("Pitch: {:?}", player.pitch()));
-                ui.text(format!("Yaw: {:?}", player.yaw()));
-                ui.text(format!("Pause: {}", controller.is_paused()));
+                ui.text(format!("Position: {:?}", player_pos.0));
+                ui.text(format!("Pitch: {:?}", player_angle.pitch()));
+                ui.text(format!("Yaw: {:?}", player_angle.yaw()));
+                ui.text(format!("Pause: {}", is_paused));
+                ui.text(format!(
+                    "Pressed Keys: {:?}",
+                    world
+                        .read_storage::<Input>()
+                        .get(player)
+                        .unwrap()
+                        .pressed_keys
+                ));
             });
         imgui::Window::new(im_str!("Light"))
             .size([300.0, 450.0], imgui::Condition::FirstUseEver)
