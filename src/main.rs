@@ -201,7 +201,7 @@ fn main() {
             y: 0.0,
             z: 0.0,
         }))
-        .with(Angle2::new(cgmath::Deg(90.0f32), cgmath::Deg(90.0f32)))
+        .with(Angle2::new(cgmath::Deg(225.0f32), cgmath::Deg(0.0f32)))
         .with(Input::new())
         .build();
     println!("OK: spawn player");
@@ -218,6 +218,13 @@ fn main() {
 
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
+
+    let (width, height) = game.window.drawable_size();
+    let center_x: i32 = width as i32 / 2;
+    let center_y: i32 = height as i32 / 2;
+    game.sdl
+        .mouse()
+        .warp_mouse_in_window(&game.window, center_x, center_y);
 
     /* デバッグ用 */
     let mut depth_test = true;
