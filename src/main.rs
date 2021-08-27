@@ -47,7 +47,7 @@ type Matrix4 = nalgebra::Matrix4<f32>;
 
 struct Game<'a> {
     sdl: Sdl,
-    video_subsystem: VideoSubsystem,
+    _video_subsystem: VideoSubsystem,
     timer_subsystem: TimerSubsystem,
     window: Window,
     _gl_context: GLContext, /* GLContextを誰かが所有していないとOpenGLを使えない */
@@ -57,7 +57,7 @@ struct Game<'a> {
     imgui_sdl2: ImguiSdl2,
     imgui_renderer: imgui_opengl_renderer::Renderer,
     event_pump: EventPump,
-    image_manager: ImageManager,
+    _image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
     block_textures: BlockTextures,
     world: GameWorld,
@@ -113,7 +113,7 @@ impl<'a> Game<'a> {
             );
         }
 
-        let mut event_pump = sdl.event_pump().unwrap();
+        let event_pump = sdl.event_pump().unwrap();
         println!("OK: init event pump");
 
         let mut image_manager = ImageManager::new(gl.clone());
@@ -141,7 +141,7 @@ impl<'a> Game<'a> {
 
         Game {
             sdl,
-            video_subsystem,
+            _video_subsystem: video_subsystem,
             timer_subsystem,
             window,
             _gl_context,
@@ -151,7 +151,7 @@ impl<'a> Game<'a> {
             imgui_sdl2,
             imgui_renderer,
             event_pump,
-            image_manager,
+            _image_manager: image_manager,
             block_atlas_texture,
             block_textures,
             world,
