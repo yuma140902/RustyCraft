@@ -1,10 +1,5 @@
-use cgmath::Angle;
-use cgmath::Deg;
-use cgmath::InnerSpace;
-use cgmath::Point3;
-use cgmath::Vector2;
-use cgmath::Vector3;
-use cgmath::Zero;
+use crate::mymath::Deg;
+use nalgebra::{Point3, Vector2, Vector3};
 use sdl2::keyboard::Scancode;
 use specs::{Component, HashMapStorage, VecStorage};
 
@@ -19,8 +14,8 @@ pub struct Velocity(pub Vector3<f32>);
 #[derive(Component, Debug)]
 #[storage(HashMapStorage)]
 pub struct Angle2 {
-    pitch: Deg<f32>,
-    yaw: Deg<f32>,
+    pitch: Deg,
+    yaw: Deg,
     front: Vector3<f32>,
     right: Vector3<f32>,
     up: Vector3<f32>,
@@ -48,14 +43,14 @@ impl Velocity {
 impl Input {
     pub fn new() -> Self {
         Self {
-            mouse_delta: Vector2::zero(),
+            mouse_delta: Vector2::<i32>::new(0, 0),
             pressed_keys: Vec::new(),
         }
     }
 }
 
 impl Angle2 {
-    pub fn new(pitch: Deg<f32>, yaw: Deg<f32>) -> Self {
+    pub fn new(pitch: Deg, yaw: Deg) -> Self {
         let (front, right, up) = Self::calc_front_right_up(pitch, yaw);
         Self {
             pitch,
@@ -66,7 +61,7 @@ impl Angle2 {
         }
     }
 
-    pub fn set(&mut self, pitch: Deg<f32>, yaw: Deg<f32>) {
+    pub fn set(&mut self, pitch: Deg, yaw: Deg) {
         let (front, right, up) = Self::calc_front_right_up(pitch, yaw);
         self.pitch = pitch;
         self.yaw = yaw;
@@ -75,37 +70,30 @@ impl Angle2 {
         self.up = up;
     }
 
-    fn calc_front_right_up(
-        pitch: Deg<f32>,
-        yaw: Deg<f32>,
-    ) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
-        let front = Vector3 {
-            x: yaw.cos() * pitch.sin(),
-            y: yaw.sin(),
-            z: yaw.cos() * pitch.cos(),
-        }
-        .normalize();
+    fn calc_front_right_up(pitch: Deg, yaw: Deg) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
+        let front =
+            Vector3::new(yaw.cos() * pitch.sin(), yaw.sin(), yaw.cos() * pitch.cos()).normalize();
 
-        let right: Deg<f32> = pitch - Deg(90.0f32);
+        let right: Deg = Deg(*pitch - 90.0f32);
         // 右方向のベクトル
-        let right = Vector3 {
-            x: right.sin(),
-            y: 0.0f32, // ロールは0なので常に床と水平
-            z: right.cos(),
-        }
+        let right = Vector3::new(
+            right.sin(),
+            0.0f32, /* ロールは0なので常に床と水平 */
+            right.cos(),
+        )
         .normalize();
 
         // 上方向のベクトル
-        let up = right.cross(front);
+        let up = right.cross(&front);
 
         (front, right, up)
     }
 
-    pub fn pitch(&self) -> &Deg<f32> {
+    pub fn pitch(&self) -> &Deg {
         &self.pitch
     }
 
-    pub fn yaw(&self) -> &Deg<f32> {
+    pub fn yaw(&self) -> &Deg {
         &self.yaw
     }
 

@@ -1,5 +1,3 @@
-use cgmath::Array;
-use cgmath::Matrix;
 use gl;
 use gl::types::*;
 use gl::Gl;
@@ -8,11 +6,6 @@ use std::ffi::{CStr, CString};
 use std::fs::File;
 use std::io::Read;
 use std::str;
-
-#[allow(dead_code)]
-type Vector3 = cgmath::Vector3<f32>;
-#[allow(dead_code)]
-type Matrix4 = cgmath::Matrix4<f32>;
 
 pub struct Program {
     gl: Gl,
@@ -86,7 +79,7 @@ impl Program {
             .Uniform1f(self.gl.GetUniformLocation(self.id, name.as_ptr()), value);
     }
 
-    pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3) {
+    pub unsafe fn set_vector3(&self, name: &CStr, value: &nalgebra::Vector3<f32>) {
         self.gl.Uniform3fv(
             self.gl.GetUniformLocation(self.id, name.as_ptr()),
             1,
@@ -99,7 +92,7 @@ impl Program {
             .Uniform3f(self.gl.GetUniformLocation(self.id, name.as_ptr()), x, y, z);
     }
 
-    pub unsafe fn set_mat4(&self, name: &CStr, mat: &Matrix4) {
+    pub unsafe fn set_mat4(&self, name: &CStr, mat: &nalgebra::Matrix4<f32>) {
         self.gl.UniformMatrix4fv(
             self.gl.GetUniformLocation(self.id, name.as_ptr()),
             1,

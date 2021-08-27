@@ -1,6 +1,5 @@
 use std::{collections::HashMap, mem};
 
-use cgmath::InnerSpace;
 use gl::{types::GLfloat, Gl};
 
 use crate::{
@@ -11,48 +10,20 @@ use crate::{
 };
 
 #[allow(unused)]
-type Point3 = cgmath::Point3<f32>;
+type Point3 = nalgebra::Point3<f32>;
 #[allow(unused)]
-type Vector3 = cgmath::Vector3<f32>;
+type Vector3 = nalgebra::Vector3<f32>;
 #[allow(unused)]
-type Matrix4 = cgmath::Matrix4<f32>;
+type Matrix4 = nalgebra::Matrix4<f32>;
 
-pub const UP: Vector3 = Vector3 {
-    x: 0.0,
-    y: 1.0,
-    z: 0.0,
-};
-pub const DOWN: Vector3 = Vector3 {
-    x: 0.0,
-    y: -1.0,
-    z: 0.0,
-};
-pub const NORTH: Vector3 = Vector3 {
-    x: 1.0,
-    y: 0.0,
-    z: 0.0,
-};
-pub const SOUTH: Vector3 = Vector3 {
-    x: -1.0,
-    y: 0.0,
-    z: 0.0,
-};
-pub const WEST: Vector3 = Vector3 {
-    x: 0.0,
-    y: 0.0,
-    z: 1.0,
-};
-pub const EAST: Vector3 = Vector3 {
-    x: 0.0,
-    y: 0.0,
-    z: -1.0,
-};
+pub const UP: Vector3 = Vector3::new(0.0, 1.0, 0.0);
+pub const DOWN: Vector3 = Vector3::new(0.0, -1.0, 0.0);
+pub const NORTH: Vector3 = Vector3::new(1.0, 0.0, 0.0);
+pub const SOUTH: Vector3 = Vector3::new(-1.0, 0.0, 0.0);
+pub const WEST: Vector3 = Vector3::new(0.0, 0.0, 1.0);
+pub const EAST: Vector3 = Vector3::new(0.0, 0.0, -1.0);
 
-const BLOCK_SIZE: Vector3 = Vector3 {
-    x: 1.0,
-    y: 1.0,
-    z: 1.0,
-};
+const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
 
 pub struct BufferBuilder {
     buffer: Vec<f32>,
@@ -80,7 +51,7 @@ impl BufferBuilder {
         block: &Block,
         textures: &HashMap<&str, TextureUV>,
     ) {
-        let begin = begin.cast::<f32>().unwrap();
+        let begin = begin.cast::<f32>();
         self.add_cuboid(&begin, &(begin + BLOCK_SIZE), block, textures);
     }
 
@@ -94,150 +65,62 @@ impl BufferBuilder {
     ) {
         // 上面
         self.add_face(
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: end.z,
-            },
+            &Point3::new(begin.x, end.y, begin.z),
+            &Point3::new(begin.x, end.y, end.z),
             &end,
-            &Point3 {
-                x: end.x,
-                y: end.y,
-                z: begin.z,
-            },
+            &Point3::new(end.x, end.y, begin.z),
             &textures[block_texture::get_texture_name(block, Side::TOP)],
         );
 
         // 下面
         self.add_face(
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: begin.y,
-                z: end.z,
-            },
+            &Point3::new(end.x, begin.y, begin.z),
+            &Point3::new(end.x, begin.y, end.z),
+            &Point3::new(begin.x, begin.y, end.z),
             &begin,
             &textures[block_texture::get_texture_name(block, Side::BOTTOM)],
         );
 
         // 南
         self.add_face(
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: begin.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: begin.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: end.z,
-            },
+            &Point3::new(begin.x, end.y, begin.z),
+            &Point3::new(begin.x, begin.y, begin.z),
+            &Point3::new(begin.x, begin.y, end.z),
+            &Point3::new(begin.x, end.y, end.z),
             &textures[block_texture::get_texture_name(block, Side::SOUTH)],
         );
 
         // 北
         self.add_face(
-            &Point3 {
-                x: end.x,
-                y: end.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: end.y,
-                z: begin.z,
-            },
+            &Point3::new(end.x, end.y, end.z),
+            &Point3::new(end.x, begin.y, end.z),
+            &Point3::new(end.x, begin.y, begin.z),
+            &Point3::new(end.x, end.y, begin.z),
             &textures[block_texture::get_texture_name(block, Side::NORTH)],
         );
 
         // 西
         self.add_face(
-            &Point3 {
-                x: end.x,
-                y: end.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: begin.y,
-                z: begin.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: begin.z,
-            },
+            &Point3::new(end.x, end.y, begin.z),
+            &Point3::new(end.x, begin.y, begin.z),
+            &Point3::new(begin.x, begin.y, begin.z),
+            &Point3::new(begin.x, end.y, begin.z),
             &textures[block_texture::get_texture_name(block, Side::WEST)],
         );
 
         // 東
         self.add_face(
-            &Point3 {
-                x: begin.x,
-                y: end.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: begin.x,
-                y: begin.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: begin.y,
-                z: end.z,
-            },
-            &Point3 {
-                x: end.x,
-                y: end.y,
-                z: end.z,
-            },
+            &Point3::new(begin.x, end.y, end.z),
+            &Point3::new(begin.x, begin.y, end.z),
+            &Point3::new(end.x, begin.y, end.z),
+            &Point3::new(end.x, end.y, end.z),
             &textures[block_texture::get_texture_name(block, Side::EAST)],
         );
     }
 
     // p1: 左上, p2: 左下, p3: 右下, p4: 右上
     pub fn add_face(&mut self, p1: &Point3, p2: &Point3, p3: &Point3, p4: &Point3, uv: &TextureUV) {
-        let normal = (p3 - p1).cross(p2 - p4).normalize();
+        let normal = (p3 - p1).cross(&(p2 - p4)).normalize();
         #[rustfmt::skip]
         let mut v: Vec<f32> = vec![
             p1.x, p1.y, p1.z, normal.x, normal.y, normal.z, uv.begin_u, uv.end_v,/* UVはtodo */

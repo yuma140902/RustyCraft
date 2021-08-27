@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use cgmath;
 use gl::Gl;
 use imgui_sdl2::ImguiSdl2;
 use sdl2::keyboard::KeyboardState;
@@ -42,12 +41,9 @@ use texture::image_manager::ImageLoadInfo;
 use texture::image_manager::ImageManager;
 use world::GameWorld;
 
-#[allow(unused)]
-type Point3 = cgmath::Point3<f32>;
-#[allow(unused)]
-type Vector3 = cgmath::Vector3<f32>;
-#[allow(unused)]
-type Matrix4 = cgmath::Matrix4<f32>;
+type Point3 = nalgebra::Point3<f32>;
+type Vector3 = nalgebra::Vector3<f32>;
+type Matrix4 = nalgebra::Matrix4<f32>;
 
 struct Game<'a> {
     sdl: Sdl,
@@ -168,7 +164,7 @@ fn main() {
 
     let gl = &game.gl;
 
-    let chunk_zero_pos = ChunkPos::new(cgmath::Point3::<i32> { x: 0, y: 0, z: 0 });
+    let chunk_zero_pos = ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0));
     let mut chunk = Chunk::new(chunk_zero_pos);
     for i in 0..16 {
         chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, i).unwrap());
@@ -191,17 +187,9 @@ fn main() {
     println!("OK: init ECS World");
     let player = world
         .create_entity()
-        .with(Position::new(Point3 {
-            x: 2.0,
-            y: 0.5,
-            z: 2.0,
-        }))
-        .with(Velocity::new(Vector3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        }))
-        .with(Angle2::new(cgmath::Deg(225.0f32), cgmath::Deg(0.0f32)))
+        .with(Position::new(Point3::new(2.0, 0.5, 2.0)))
+        .with(Velocity::new(Vector3::new(0.0, 0.0, 0.0)))
+        .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .build();
     println!("OK: spawn player");
@@ -235,33 +223,13 @@ fn main() {
     let mut is_paused = false;
     let mut show_imgui = true;
     /* ベクトルではなく色 */
-    let mut material_specular = Vector3 {
-        x: 0.2,
-        y: 0.2,
-        z: 0.2,
-    };
+    let mut material_specular = Vector3::new(0.2, 0.2, 0.2);
     let mut material_shininess: f32 = 0.1;
-    let mut light_direction = Vector3 {
-        x: 1.0,
-        y: 1.0,
-        z: 0.0,
-    };
+    let mut light_direction = Vector3::new(1.0, 1.0, 0.0);
     /* ambient, diffuse, specular はベクトルではなく色 */
-    let mut ambient = Vector3 {
-        x: 0.3,
-        y: 0.3,
-        z: 0.3,
-    };
-    let mut diffuse = Vector3 {
-        x: 0.5,
-        y: 0.5,
-        z: 0.5,
-    };
-    let mut specular = Vector3 {
-        x: 0.2,
-        y: 0.2,
-        z: 0.2,
-    };
+    let mut ambient = Vector3::new(0.3, 0.3, 0.3);
+    let mut diffuse = Vector3::new(0.5, 0.5, 0.5);
+    let mut specular = Vector3::new(0.2, 0.2, 0.2);
 
     let mut last_tick = game.timer_subsystem.ticks();
 
@@ -309,10 +277,10 @@ fn main() {
             let center_x: i32 = width as i32 / 2;
             let center_y: i32 = height as i32 / 2;
             *input.get_mut(player).unwrap() = Input {
-                mouse_delta: cgmath::Vector2::<i32> {
-                    x: center_x - mouse.x(),
-                    y: center_y - mouse.y(),
-                },
+                mouse_delta: nalgebra::Vector2::<i32>::new(
+                    center_x - mouse.x(),
+                    center_y - mouse.y(),
+                ),
                 pressed_keys: keyboard.pressed_scancodes().collect(),
             };
             // マウスを中心に戻す
@@ -360,11 +328,12 @@ fn main() {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let model_matrix = Matrix4::from_scale(0.5f32);
+        let model_matrix =
+            nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
         let view_matrix = camera.compute_view_matrix(&player_angle, &player_pos);
-        let projection_matrix: Matrix4 = cgmath::perspective(
-            cgmath::Deg(45.0f32),
+        let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
+            *Deg(45.0f32).rad(),
             0.1,
             100.0,
         );

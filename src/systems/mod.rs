@@ -30,14 +30,14 @@ impl<'a> System<'a> for AngleController {
     );
 
     fn run(&mut self, (delta, input, mut angle): Self::SystemData) {
-        use cgmath::Deg;
+        use crate::mymath::Deg;
 
         for (input, angle) in (&input, &mut angle).join() {
             let mut pitch = angle.pitch().clone();
             let mut yaw = angle.yaw().clone();
 
-            pitch += Deg(game_config::ROTATE_SPEED * delta.0 as f32 * input.mouse_delta.x as f32);
-            yaw += Deg(game_config::ROTATE_SPEED * delta.0 as f32 * input.mouse_delta.y as f32);
+            *pitch += *Deg(game_config::ROTATE_SPEED * delta.0 as f32 * input.mouse_delta.x as f32);
+            *yaw += *Deg(game_config::ROTATE_SPEED * delta.0 as f32 * input.mouse_delta.y as f32);
 
             if yaw < Deg(-90f32) {
                 yaw = Deg(-90f32);
@@ -46,10 +46,10 @@ impl<'a> System<'a> for AngleController {
                 yaw = Deg(90f32);
             }
             if pitch < Deg(0f32) {
-                pitch += Deg(360f32);
+                *pitch += *Deg(360f32);
             }
             if pitch > Deg(360f32) {
-                pitch -= Deg(360f32);
+                *pitch -= *Deg(360f32);
             }
 
             angle.set(pitch, yaw);
@@ -67,25 +67,15 @@ impl<'a> System<'a> for VelocityController {
     );
 
     fn run(&mut self, (input, angle, mut vel): Self::SystemData) {
-        use cgmath::InnerSpace;
-        use cgmath::Vector3;
-        use cgmath::Zero;
+        use nalgebra::Vector3;
         use sdl2::keyboard::Scancode;
 
         for (input, angle, vel) in (&input, &angle, &mut vel).join() {
-            let front_on_ground = Vector3::<f32> {
-                x: angle.front().x,
-                y: 0.0,
-                z: angle.front().z,
-            }
-            .normalize();
-            let up_on_ground = Vector3::<f32> {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            };
+            let front_on_ground =
+                Vector3::<f32>::new(angle.front().x, 0.0, angle.front().z).normalize();
+            let up_on_ground = Vector3::<f32>::new(0.0, 1.0, 0.0);
 
-            let mut velocity = Vector3::zero();
+            let mut velocity = Vector3::<f32>::new(0.0, 0.0, 0.0);
 
             if input.pressed_keys.contains(&Scancode::W) {
                 velocity += front_on_ground * game_config::MOVE_SPEED;
