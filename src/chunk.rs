@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use gl::Gl;
+use parry3d::bounding_volume::AABB;
 
 use crate::mymath::BlockPosInChunk;
 use crate::mymath::BlockPosInWorld;
@@ -32,6 +33,24 @@ impl Chunk {
 
     pub fn get_block(&self, pos: &BlockPosInChunk) -> Option<Block> {
         self.blocks[pos.index()]
+    }
+
+    pub fn aabbs_for_collision(&self) -> Vec<AABB> {
+        let mut vec = Vec::<AABB>::new();
+        /* ToDo: BlockPosInChunk のイテレータ */
+        for x in 0..16 {
+            for y in 0..16 {
+                for z in 0..16 {
+                    let pos = BlockPosInChunk::new(x, y, z).unwrap();
+                    let index = pos.index();
+                    if let Some(block) = self.blocks[index] {
+                        let pos_in_world = BlockPosInWorld::from_chunk_pos(self.position(), &pos);
+                        vec.append(&mut crate::block::get_block_aabbs(&block, &pos_in_world));
+                    }
+                }
+            }
+        }
+        vec
     }
 
     pub fn generate_vertex_obj(&self, gl: &Gl, textures: &HashMap<&str, TextureUV>) -> Vertex {

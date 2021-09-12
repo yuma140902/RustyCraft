@@ -1,5 +1,6 @@
 use crate::mymath::Deg;
 use nalgebra::{Point3, Vector2, Vector3};
+use parry3d::shape::Cuboid;
 use sdl2::keyboard::Scancode;
 use specs::{Component, HashMapStorage, VecStorage};
 
@@ -27,6 +28,10 @@ pub struct Input {
     pub mouse_delta: Vector2<i32>,
     pub pressed_keys: Vec<Scancode>,
 }
+
+#[derive(Component, Debug)]
+#[storage(HashMapStorage)]
+pub struct Collider(pub Cuboid);
 
 impl Position {
     pub fn new(point: Point3<f32>) -> Self {

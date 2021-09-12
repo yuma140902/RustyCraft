@@ -2,6 +2,7 @@ use std::path::Path;
 
 use gl::Gl;
 use imgui_sdl2::ImguiSdl2;
+use parry3d::shape::Cuboid;
 use sdl2::keyboard::KeyboardState;
 use sdl2::mouse::MouseState;
 use sdl2::video::GLContext;
@@ -167,8 +168,13 @@ fn main() {
     let chunk_zero_pos = ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0));
     let mut chunk = Chunk::new(chunk_zero_pos);
     for i in 0..16 {
-        chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, i).unwrap());
+        for j in 0..16 {
+            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, 0, j).unwrap());
+            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(0, i, j).unwrap());
+            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, j, 0).unwrap());
+        }
     }
+    chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
     game.world.add_chunk(chunk).unwrap();
 
     let vertex_obj = game
@@ -183,14 +189,17 @@ fn main() {
     world.register::<Velocity>();
     world.register::<Angle2>();
     world.register::<Input>();
+    world.register::<Collider>();
     world.insert(DeltaTick(0));
+    world.insert(game.world);
     println!("OK: init ECS World");
     let player = world
         .create_entity()
-        .with(Position::new(Point3::new(2.0, 0.5, 2.0)))
+        .with(Position::new(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::new(Vector3::new(0.0, 0.0, 0.0)))
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
+        .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
         .build();
     println!("OK: spawn player");
     let mut dispatcher = DispatcherBuilder::new()
@@ -201,6 +210,7 @@ fn main() {
             "velocity controller",
             &["angle controller"],
         )
+        .with(VelocityAdjusterForCollisions, "velocity adjuster", &[])
         .build();
     println!("OK: init ECS Dispatcher");
 

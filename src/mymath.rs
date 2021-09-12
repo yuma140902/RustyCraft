@@ -70,6 +70,10 @@ impl BlockPosInWorld {
 
         return Self::new(block_pos + chunk_pos);
     }
+
+    pub fn inner(&self) -> Point3<i32> {
+        self.0
+    }
 }
 impl Deref for BlockPosInWorld {
     type Target = Point3<i32>;
