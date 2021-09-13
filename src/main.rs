@@ -424,7 +424,10 @@ fn main() {
 
                     ui.separator();
 
-                    ui.text(format!("Position: {:?}", player_pos.0));
+                    ui.text(format!(
+                        "Position: ({:.2}, {:.2}, {:.2})",
+                        player_pos.0.x, player_pos.0.y, player_pos.0.z
+                    ));
                     ui.text(format!("Pitch: {:?}", player_angle.pitch()));
                     ui.text(format!("Yaw: {:?}", player_angle.yaw()));
                     ui.text(format!("Pause: {}", is_paused));
