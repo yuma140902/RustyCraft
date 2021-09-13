@@ -27,6 +27,22 @@ impl<'a> System<'a> for PositionUpdater {
     }
 }
 
+pub struct VelocityUpdater;
+
+impl<'a> System<'a> for VelocityUpdater {
+    type SystemData = (
+        Read<'a, DeltaTick>,
+        ReadStorage<'a, Acceleration>,
+        WriteStorage<'a, Velocity>,
+    );
+
+    fn run(&mut self, (delta, acc, mut vel): Self::SystemData) {
+        for (acc, vel) in (&acc, &mut vel).join() {
+            vel.0 += acc.0 * delta.0 as f32;
+        }
+    }
+}
+
 pub struct AngleController;
 impl<'a> System<'a> for AngleController {
     type SystemData = (

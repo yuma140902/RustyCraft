@@ -13,6 +13,10 @@ pub struct Position(pub Point3<f32>);
 pub struct Velocity(pub Vector3<f32>);
 
 #[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Acceleration(pub Vector3<f32>);
+
+#[derive(Component, Debug)]
 #[storage(HashMapStorage)]
 pub struct Angle2 {
     pitch: Deg,

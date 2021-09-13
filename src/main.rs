@@ -187,6 +187,7 @@ fn main() {
     let mut world = World::new();
     world.register::<Position>();
     world.register::<Velocity>();
+    world.register::<Acceleration>();
     world.register::<Angle2>();
     world.register::<Input>();
     world.register::<Collider>();
@@ -197,20 +198,30 @@ fn main() {
         .create_entity()
         .with(Position::new(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::new(Vector3::new(0.0, 0.0, 0.0)))
+        .with(Acceleration(Vector3::new(0.0, -0.0001, 0.0)))
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
         .build();
     println!("OK: spawn player");
     let mut dispatcher = DispatcherBuilder::new()
-        .with(PositionUpdater, "position updater", &[])
         .with(AngleController, "angle controller", &[])
         .with(
             VelocityController,
             "velocity controller",
             &["angle controller"],
         )
-        .with(VelocityAdjusterForCollisions, "velocity adjuster", &[])
+        .with(
+            VelocityUpdater,
+            "velocity updater",
+            &["velocity controller"],
+        )
+        .with(
+            VelocityAdjusterForCollisions,
+            "velocity adjuster",
+            &["velocity updater"],
+        )
+        .with(PositionUpdater, "position updater", &["velocity adjuster"])
         .build();
     println!("OK: init ECS Dispatcher");
 
