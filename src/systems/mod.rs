@@ -151,12 +151,6 @@ impl<'a> System<'a> for VelocityAdjusterForCollisions {
                 .0
                 .aabb(&Isometry3::new(pos.0.coords, Vector3::zeros()));
 
-            // 現在のエンティティのAABBと、次のフレームでのエンティティのAABBを両方とも含むようなAABB
-            let extended_entity_aabb = entity_aabb.merged(&AABB::from_half_extents(
-                pos.0 + delta.0 as f32 * vel.0,
-                collider.0.half_extents,
-            ));
-
             let aabbs_and_extended_aabbs: Vec<(AABB, AABB)> = aabbs
                 .iter()
                 .map(|aabb| {
@@ -175,7 +169,8 @@ impl<'a> System<'a> for VelocityAdjusterForCollisions {
                 &aabbs_and_extended_aabbs,
                 &pos,
                 vel,
-                &extended_entity_aabb,
+                &delta,
+                &entity_aabb,
             ) {}
         }
     }
@@ -187,8 +182,15 @@ impl VelocityAdjusterForCollisions {
         aabbs_and_extended_aabbs: &Vec<(AABB, AABB)>,
         entity_pos: &Position,
         entity_vel: &mut Velocity,
-        extended_entity_aabb: &AABB,
+        delta: &DeltaTick,
+        entity_aabb: &AABB,
     ) -> bool {
+        // 現在のエンティティのAABBと、次のフレームでのエンティティのAABBを両方とも含むようなAABB
+        let extended_entity_aabb = entity_aabb.merged(&AABB::from_half_extents(
+            entity_pos.0 + entity_vel.0 * delta.0 as f32,
+            entity_aabb.half_extents(),
+        ));
+
         let mut nearest_toi = std::f32::INFINITY;
         let mut nearest_normal: Option<Vector3<f32>> = None;
         for (aabb, extended_aabb) in aabbs_and_extended_aabbs {
