@@ -1,4 +1,4 @@
-use crate::mymath::Deg;
+use crate::{ecs_resources::DeltaTick, mymath::Deg};
 use nalgebra::{Point3, Vector2, Vector3};
 use parry3d::shape::Cuboid;
 use sdl2::keyboard::Scancode;
@@ -15,6 +15,13 @@ pub struct Velocity(pub Vector3<f32>);
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Acceleration(pub Vector3<f32>);
+
+#[derive(Component, Debug, Default)]
+#[storage(VecStorage)]
+pub struct Force {
+    pub vec: Vector3<f32>,
+    pub ticks: DeltaTick,
+}
 
 #[derive(Component, Debug)]
 #[storage(HashMapStorage)]

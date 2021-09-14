@@ -33,12 +33,22 @@ impl<'a> System<'a> for VelocityUpdater {
     type SystemData = (
         Read<'a, DeltaTick>,
         ReadStorage<'a, Acceleration>,
+        WriteStorage<'a, Force>,
         WriteStorage<'a, Velocity>,
     );
 
-    fn run(&mut self, (delta, acc, mut vel): Self::SystemData) {
-        for (acc, vel) in (&acc, &mut vel).join() {
+    fn run(&mut self, (delta, acc, mut force, mut vel): Self::SystemData) {
+        for (acc, force, vel) in (&acc, &mut force, &mut vel).join() {
             vel.0 += acc.0 * delta.0 as f32;
+            if force.ticks.0 > 0u32 {
+                vel.0 += force.vec * delta.0 as f32;
+            }
+            if force.ticks.0 <= delta.0 {
+                force.ticks.0 = 0u32;
+                force.vec = Vector3::zeros();
+            } else {
+                force.ticks.0 -= delta.0;
+            }
         }
     }
 }
@@ -86,12 +96,13 @@ impl<'a> System<'a> for VelocityController {
         ReadStorage<'a, Input>,
         ReadStorage<'a, Angle2>,
         WriteStorage<'a, Velocity>,
+        WriteStorage<'a, Force>,
     );
 
-    fn run(&mut self, (input, angle, mut vel): Self::SystemData) {
+    fn run(&mut self, (input, angle, mut vel, mut force): Self::SystemData) {
         use sdl2::keyboard::Scancode;
 
-        for (input, angle, vel) in (&input, &angle, &mut vel).join() {
+        for (input, angle, vel, force) in (&input, &angle, &mut vel, &mut force).join() {
             let front_on_ground =
                 Vector3::<f32>::new(angle.front().x, 0.0, angle.front().z).normalize();
             let up_on_ground = Vector3::<f32>::new(0.0, 1.0, 0.0);
@@ -111,7 +122,13 @@ impl<'a> System<'a> for VelocityController {
                 velocity -= *angle.right() * game_config::MOVE_SPEED;
             }
             if input.pressed_keys.contains(&Scancode::Space) {
-                velocity += up_on_ground * game_config::MOVE_SPEED;
+                //velocity += up_on_ground * game_config::MOVE_SPEED;
+                if force.ticks.0 == 0u32 {
+                    *force = Force {
+                        vec: Vector3::new(0.0, 0.0002, 0.0),
+                        ticks: DeltaTick(300),
+                    }
+                }
             }
             if input.pressed_keys.contains(&Scancode::LShift) {
                 velocity -= up_on_ground * game_config::MOVE_SPEED;

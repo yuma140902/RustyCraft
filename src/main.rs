@@ -174,6 +174,9 @@ fn main() {
             chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, j, 0).unwrap());
         }
     }
+    for i in 1..15 {
+        chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, 15).unwrap());
+    }
     chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
     game.world.add_chunk(chunk).unwrap();
 
@@ -188,6 +191,7 @@ fn main() {
     world.register::<Position>();
     world.register::<Velocity>();
     world.register::<Acceleration>();
+    world.register::<Force>();
     world.register::<Angle2>();
     world.register::<Input>();
     world.register::<Collider>();
@@ -199,6 +203,7 @@ fn main() {
         .with(Position::new(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::new(Vector3::new(0.0, 0.0, 0.0)))
         .with(Acceleration(Vector3::new(0.0, -0.0001, 0.0)))
+        .with(Force::default())
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
@@ -242,7 +247,7 @@ fn main() {
     let mut culling = true;
     let mut alpha: f32 = 1.0;
     let mut is_paused = false;
-    let mut show_imgui = true;
+    let mut show_imgui = false;
     /* ベクトルではなく色 */
     let mut material_specular = Vector3::new(0.2, 0.2, 0.2);
     let mut material_shininess: f32 = 0.1;
