@@ -1,6 +1,6 @@
 use parry3d::shape::Cuboid;
-use specs::{Component, HashMapStorage};
+use specs::{Component, VecStorage};
 
 #[derive(Component, Debug)]
-#[storage(HashMapStorage)]
+#[storage(VecStorage)]
 pub struct Collider(pub Cuboid);
