@@ -2,6 +2,7 @@ use std::path::Path;
 
 use gl::Gl;
 use imgui_sdl2::ImguiSdl2;
+use nameof::name_of_type;
 use parry3d::shape::Cuboid;
 use sdl2::keyboard::KeyboardState;
 use sdl2::mouse::MouseState;
@@ -210,23 +211,27 @@ fn main() {
         .build();
     println!("OK: spawn player");
     let mut dispatcher = DispatcherBuilder::new()
-        .with(AngleController, "angle controller", &[])
+        .with(AngleController, name_of_type!(AngleController), &[])
         .with(
             VelocityController,
-            "velocity controller",
-            &["angle controller"],
+            name_of_type!(VelocityController),
+            &[name_of_type!(AngleController)],
         )
         .with(
             VelocityUpdater,
-            "velocity updater",
-            &["velocity controller"],
+            name_of_type!(VelocityUpdater),
+            &[name_of_type!(VelocityController)],
         )
         .with(
             VelocityAdjusterForCollisions,
-            "velocity adjuster",
-            &["velocity updater"],
+            name_of_type!(VelocityAdjusterForCollisions),
+            &[name_of_type!(VelocityUpdater)],
         )
-        .with(PositionUpdater, "position updater", &["velocity adjuster"])
+        .with(
+            PositionUpdater,
+            name_of_type!(PositionUpdater),
+            &[name_of_type!(VelocityAdjusterForCollisions)],
+        )
         .build();
     println!("OK: init ECS Dispatcher");
 

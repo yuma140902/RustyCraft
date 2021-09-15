@@ -112,6 +112,7 @@ dependencies = [
  "imgui-sdl2",
  "nalgebra",
  "nalgebra-glm",
+ "nameof",
  "parry3d",
  "sdl2",
  "specs",
@@ -476,6 +477,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "nameof"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba896fb4d7fe86433ebaf18c532bd9202e54c450a1bf7723855220e0e76d71d1"
 
 [[package]]
 name = "nom"
