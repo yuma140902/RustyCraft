@@ -202,7 +202,7 @@ fn main() {
         .create_entity()
         .with(Position::new(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::default())
-        .with(Acceleration(Vector3::new(0.0, -0.0001, 0.0)))
+        .with(Acceleration::gravity())
         .with(Force::default())
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
