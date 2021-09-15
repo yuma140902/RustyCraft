@@ -134,7 +134,9 @@ impl<'a> System<'a> for VelocityController {
                 velocity -= up_on_ground * game_config::MOVE_SPEED;
             }
 
-            vel.0 = velocity;
+            vel.0.x = 0f32;
+            vel.0.z = 0f32;
+            vel.0 += velocity;
         }
     }
 }
