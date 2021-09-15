@@ -127,7 +127,7 @@ impl<'a> System<'a> for VelocityController {
                     // ジャンプのクールダウンのために使っている。本来はOnGroundみたいなフラグを用意すべき
                     *force = Force {
                         vec: Vector3::zeros(),
-                        ticks: DeltaTick(600),
+                        ticks: DeltaTick(800),
                     };
                 }
                 // if force.ticks.0 == 0u32 {
