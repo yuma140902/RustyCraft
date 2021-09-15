@@ -200,7 +200,7 @@ fn main() {
     println!("OK: init ECS World");
     let player = world
         .create_entity()
-        .with(Position::new(Point3::new(4.0, 2.5, 4.0)))
+        .with(Position(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::default())
         .with(Acceleration::gravity())
         .with(Force::default())
