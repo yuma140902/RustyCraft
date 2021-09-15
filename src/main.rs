@@ -324,6 +324,10 @@ fn main() {
         let player_pos = player_pos.get(player).unwrap();
         let player_angle = world.read_storage::<Angle2>();
         let player_angle = player_angle.get(player).unwrap();
+        let player_vel = world.read_storage::<Velocity>();
+        let player_vel = player_vel.get(player).unwrap();
+        let player_acc = world.read_storage::<Acceleration>();
+        let player_acc = player_acc.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -406,7 +410,7 @@ fn main() {
             let ui = game.imgui.frame();
             use imgui::im_str;
             imgui::Window::new(im_str!("Information"))
-                .size([300.0, 300.0], imgui::Condition::FirstUseEver)
+                .size([300.0, 340.0], imgui::Condition::FirstUseEver)
                 .position([5.0, 5.0], imgui::Condition::FirstUseEver)
                 .build(&ui, || {
                     ui.text(im_str!("OpenGL Sandbox 1.0"));
@@ -438,6 +442,18 @@ fn main() {
                         "Position: ({:.2}, {:.2}, {:.2})",
                         player_pos.0.x, player_pos.0.y, player_pos.0.z
                     ));
+                    ui.text(format!(
+                        "Velocity*10^3: ({:.2}, {:.2}, {:.2})",
+                        player_vel.0.x * 1000f32,
+                        player_vel.0.y * 1000f32,
+                        player_vel.0.z * 1000f32
+                    ));
+                    ui.text(format!(
+                        "Acceleration*10^3: ({:.2}, {:.2}, {:.2})",
+                        player_acc.0.x * 1000f32,
+                        player_acc.0.y * 1000f32,
+                        player_acc.0.z * 1000f32
+                    ));
                     ui.text(format!("Pitch: {:?}", player_angle.pitch()));
                     ui.text(format!("Yaw: {:?}", player_angle.yaw()));
                     ui.text(format!("Pause: {}", is_paused));
@@ -451,6 +467,7 @@ fn main() {
                     ));
                 });
             imgui::Window::new(im_str!("Light"))
+                .collapsed(true, imgui::Condition::FirstUseEver)
                 .size([300.0, 450.0], imgui::Condition::FirstUseEver)
                 .position([600.0, 10.0], imgui::Condition::FirstUseEver)
                 .build(&ui, || {
