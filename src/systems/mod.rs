@@ -122,13 +122,20 @@ impl<'a> System<'a> for VelocityController {
                 velocity -= *angle.right() * game_config::MOVE_SPEED;
             }
             if input.pressed_keys.contains(&Scancode::Space) {
-                //velocity += up_on_ground * game_config::MOVE_SPEED;
                 if force.ticks.0 == 0u32 {
+                    velocity += up_on_ground * game_config::JUMP_SPEED;
+                    // ジャンプのクールダウンのために使っている。本来はOnGroundみたいなフラグを用意すべき
                     *force = Force {
-                        vec: Vector3::new(0.0, 0.0002, 0.0),
-                        ticks: DeltaTick(300),
-                    }
+                        vec: Vector3::zeros(),
+                        ticks: DeltaTick(600),
+                    };
                 }
+                // if force.ticks.0 == 0u32 {
+                //     *force = Force {
+                //         vec: Vector3::new(0.0, game_config::GRAVITY * 2f32, 0.0),
+                //         ticks: DeltaTick(300),
+                //     }
+                // }
             }
             if input.pressed_keys.contains(&Scancode::LShift) {
                 velocity -= up_on_ground * game_config::MOVE_SPEED;
