@@ -400,7 +400,7 @@ fn main() {
             vertex_obj.draw_triangles();
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
-        if show_imgui {
+        if cfg!(debug_assertions) && show_imgui {
             game.imgui_sdl2.prepare_frame(
                 game.imgui.io_mut(),
                 &game.window,
