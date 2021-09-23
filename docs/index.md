@@ -6,6 +6,10 @@ PistonやAmethystなどのゲームエンジンを使っていません。ただ
 
 このゲームはWindows、Linux、macOSのどのプラットフォームでも動作しますが、コンパイル環境の準備ができなかったので今回はWindows用のバイナリのみを配布しています。ソースコードは https://github.com/yuma140902/RustyCraft にあります。`cargo build --release`でビルドできます。
 
+![screenshot](https://user-images.githubusercontent.com/23431077/134598490-542474aa-095e-4939-a7c1-49a5a95d300a.png)
+
+![demo](https://user-images.githubusercontent.com/23431077/134598462-0c093e6a-dc22-4eb2-af0d-f1e54facfb0a.gif)
+
 # ダウンロード
 
 ## Windows のみ
