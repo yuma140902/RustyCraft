@@ -1,5 +1,5 @@
 [package]
-name = "clone"
+name = "RustyCraft"
 version = "0.1.0"
 edition = "2018"
 build = "build.rs"

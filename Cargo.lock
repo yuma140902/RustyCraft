@@ -3,6 +3,24 @@
 version = 3
 
 [[package]]
+name = "RustyCraft"
+version = "0.1.0"
+dependencies = [
+ "c_str_macro",
+ "gl",
+ "image",
+ "imgui",
+ "imgui-opengl-renderer",
+ "imgui-sdl2",
+ "nalgebra",
+ "nalgebra-glm",
+ "nameof",
+ "parry3d",
+ "sdl2",
+ "specs",
+]
+
+[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -99,24 +117,6 @@ name = "chlorine"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd650552110e39b7c5058986cf177decd3365841836578ac50a286094eac0be6"
-
-[[package]]
-name = "clone"
-version = "0.1.0"
-dependencies = [
- "c_str_macro",
- "gl",
- "image",
- "imgui",
- "imgui-opengl-renderer",
- "imgui-sdl2",
- "nalgebra",
- "nalgebra-glm",
- "nameof",
- "parry3d",
- "sdl2",
- "specs",
-]
 
 [[package]]
 name = "color_quant"
