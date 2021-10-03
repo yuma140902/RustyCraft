@@ -291,6 +291,9 @@ fn main() {
             }
         }
 
+        // カーソルを非表示
+        game.sdl.mouse().show_cursor(is_paused);
+
         let (width, height) = game.window.drawable_size();
 
         // DeltaTickリソースを更新
