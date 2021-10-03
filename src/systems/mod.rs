@@ -33,22 +33,12 @@ impl<'a> System<'a> for VelocityUpdater {
     type SystemData = (
         Read<'a, DeltaTick>,
         ReadStorage<'a, Acceleration>,
-        WriteStorage<'a, Force>,
         WriteStorage<'a, Velocity>,
     );
 
-    fn run(&mut self, (delta, acc, mut force, mut vel): Self::SystemData) {
-        for (acc, force, vel) in (&acc, &mut force, &mut vel).join() {
+    fn run(&mut self, (delta, acc, mut vel): Self::SystemData) {
+        for (acc, vel) in (&acc, &mut vel).join() {
             vel.0 += acc.0 * delta.0 as f32;
-            if force.ticks.0 > 0u32 {
-                vel.0 += force.vec * delta.0 as f32;
-            }
-            if force.ticks.0 <= delta.0 {
-                force.ticks.0 = 0u32;
-                force.vec = Vector3::zeros();
-            } else {
-                force.ticks.0 -= delta.0;
-            }
         }
     }
 }
@@ -95,14 +85,14 @@ impl<'a> System<'a> for VelocityController {
     type SystemData = (
         ReadStorage<'a, Input>,
         ReadStorage<'a, Angle2>,
+        ReadStorage<'a, OnGround>,
         WriteStorage<'a, Velocity>,
-        WriteStorage<'a, Force>,
     );
 
-    fn run(&mut self, (input, angle, mut vel, mut force): Self::SystemData) {
+    fn run(&mut self, (input, angle, is_on_ground, mut vel): Self::SystemData) {
         use sdl2::keyboard::Scancode;
 
-        for (input, angle, vel, force) in (&input, &angle, &mut vel, &mut force).join() {
+        for (input, angle, is_on_ground, vel) in (&input, &angle, &is_on_ground, &mut vel).join() {
             let front_on_ground =
                 Vector3::<f32>::new(angle.front().x, 0.0, angle.front().z).normalize();
             let up_on_ground = Vector3::<f32>::new(0.0, 1.0, 0.0);
@@ -121,21 +111,8 @@ impl<'a> System<'a> for VelocityController {
             if input.pressed_keys.contains(&Scancode::A) {
                 velocity -= *angle.right() * game_config::MOVE_SPEED;
             }
-            if input.pressed_keys.contains(&Scancode::Space) {
-                if force.ticks.0 == 0u32 {
-                    velocity += up_on_ground * game_config::JUMP_SPEED;
-                    // ジャンプのクールダウンのために使っている。本来はOnGroundみたいなフラグを用意すべき
-                    *force = Force {
-                        vec: Vector3::zeros(),
-                        ticks: DeltaTick(800),
-                    };
-                }
-                // if force.ticks.0 == 0u32 {
-                //     *force = Force {
-                //         vec: Vector3::new(0.0, game_config::GRAVITY * 2f32, 0.0),
-                //         ticks: DeltaTick(300),
-                //     }
-                // }
+            if input.pressed_keys.contains(&Scancode::Space) && is_on_ground.0 {
+                velocity += up_on_ground * game_config::JUMP_SPEED;
             }
             if input.pressed_keys.contains(&Scancode::LShift) {
                 velocity -= up_on_ground * game_config::MOVE_SPEED;
@@ -148,19 +125,23 @@ impl<'a> System<'a> for VelocityController {
     }
 }
 
-pub struct VelocityAdjusterForCollisions;
+/// 当たり判定を行い、VelocityやOnGroundを更新する
+pub struct CollisionHandler;
 
-impl<'a> System<'a> for VelocityAdjusterForCollisions {
+impl<'a> System<'a> for CollisionHandler {
     type SystemData = (
         Read<'a, DeltaTick>,
         ReadExpect<'a, GameWorld>,
         ReadStorage<'a, Collider>,
         ReadStorage<'a, Position>,
         WriteStorage<'a, Velocity>,
+        WriteStorage<'a, OnGround>,
     );
 
-    fn run(&mut self, (delta, world, collider, pos, mut vel): Self::SystemData) {
-        for (collider, pos, vel) in (&collider, &pos, &mut vel).join() {
+    fn run(&mut self, (delta, world, collider, pos, mut vel, mut is_on_ground): Self::SystemData) {
+        for (collider, pos, vel, is_on_ground) in
+            (&collider, &pos, &mut vel, &mut is_on_ground).join()
+        {
             let aabbs = {
                 let mut aabbs: Vec<AABB> = Vec::new();
                 /* TODO: エンティティの周りのチャンクを取得する処理 */
@@ -191,18 +172,32 @@ impl<'a> System<'a> for VelocityAdjusterForCollisions {
                 })
                 .collect();
 
-            while VelocityAdjusterForCollisions::get_adjusted_vel(
+            while CollisionHandler::get_adjusted_vel(
                 &aabbs_and_extended_aabbs,
                 &pos,
                 vel,
                 &delta,
                 &entity_aabb,
             ) {}
+
+            let mut on_ground_test_vel = Velocity(Vector3::new(0.0f32, -0.001f32, 0.0f32));
+
+            if CollisionHandler::get_adjusted_vel(
+                &aabbs_and_extended_aabbs,
+                &Position(pos.0 + vel.0 * delta.0 as f32),
+                &mut on_ground_test_vel,
+                &delta,
+                &entity_aabb,
+            ) {
+                is_on_ground.0 = true;
+            } else {
+                is_on_ground.0 = false;
+            }
         }
     }
 }
 
-impl VelocityAdjusterForCollisions {
+impl CollisionHandler {
     /// 戻り値: entity_velが更新されたかどうか
     fn get_adjusted_vel(
         aabbs_and_extended_aabbs: &Vec<(AABB, AABB)>,
