@@ -135,19 +135,23 @@ impl<'a> System<'a> for VelocityController {
     }
 }
 
-pub struct VelocityAdjusterForCollisions;
+/// 当たり判定を行い、VelocityやOnGroundを更新する
+pub struct CollisionHandler;
 
-impl<'a> System<'a> for VelocityAdjusterForCollisions {
+impl<'a> System<'a> for CollisionHandler {
     type SystemData = (
         Read<'a, DeltaTick>,
         ReadExpect<'a, GameWorld>,
         ReadStorage<'a, Collider>,
         ReadStorage<'a, Position>,
         WriteStorage<'a, Velocity>,
+        WriteStorage<'a, OnGround>,
     );
 
-    fn run(&mut self, (delta, world, collider, pos, mut vel): Self::SystemData) {
-        for (collider, pos, vel) in (&collider, &pos, &mut vel).join() {
+    fn run(&mut self, (delta, world, collider, pos, mut vel, mut is_on_ground): Self::SystemData) {
+        for (collider, pos, vel, is_on_ground) in
+            (&collider, &pos, &mut vel, &mut is_on_ground).join()
+        {
             let aabbs = {
                 let mut aabbs: Vec<AABB> = Vec::new();
                 /* TODO: エンティティの周りのチャンクを取得する処理 */
@@ -178,18 +182,32 @@ impl<'a> System<'a> for VelocityAdjusterForCollisions {
                 })
                 .collect();
 
-            while VelocityAdjusterForCollisions::get_adjusted_vel(
+            while CollisionHandler::get_adjusted_vel(
                 &aabbs_and_extended_aabbs,
                 &pos,
                 vel,
                 &delta,
                 &entity_aabb,
             ) {}
+
+            let mut on_ground_test_vel = Velocity(Vector3::new(0.0f32, -0.001f32, 0.0f32));
+
+            if CollisionHandler::get_adjusted_vel(
+                &aabbs_and_extended_aabbs,
+                &Position(pos.0 + vel.0 * delta.0 as f32),
+                &mut on_ground_test_vel,
+                &delta,
+                &entity_aabb,
+            ) {
+                is_on_ground.0 = true;
+            } else {
+                is_on_ground.0 = false;
+            }
         }
     }
 }
 
-impl VelocityAdjusterForCollisions {
+impl CollisionHandler {
     /// 戻り値: entity_velが更新されたかどうか
     fn get_adjusted_vel(
         aabbs_and_extended_aabbs: &Vec<(AABB, AABB)>,

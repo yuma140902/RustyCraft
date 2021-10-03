@@ -225,14 +225,14 @@ fn main() {
             &[name_of_type!(VelocityController)],
         )
         .with(
-            VelocityAdjusterForCollisions,
-            name_of_type!(VelocityAdjusterForCollisions),
+            CollisionHandler,
+            name_of_type!(CollisionHandler),
             &[name_of_type!(VelocityUpdater)],
         )
         .with(
             PositionUpdater,
             name_of_type!(PositionUpdater),
-            &[name_of_type!(VelocityAdjusterForCollisions)],
+            &[name_of_type!(CollisionHandler)],
         )
         .build();
     println!("OK: init ECS Dispatcher");
@@ -330,6 +330,8 @@ fn main() {
         let player_vel = player_vel.get(player).unwrap();
         let player_acc = world.read_storage::<Acceleration>();
         let player_acc = player_acc.get(player).unwrap();
+        let player_is_on_ground = world.read_storage::<OnGround>();
+        let player_is_on_ground = player_is_on_ground.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -458,6 +460,7 @@ fn main() {
                     ));
                     ui.text(format!("Pitch: {:?}", player_angle.pitch()));
                     ui.text(format!("Yaw: {:?}", player_angle.yaw()));
+                    ui.text(format!("OnGround: {}", player_is_on_ground.0));
                     ui.text(format!("Pause: {}", is_paused));
                     ui.text(format!(
                         "Pressed Keys: {:?}",
