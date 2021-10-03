@@ -33,22 +33,12 @@ impl<'a> System<'a> for VelocityUpdater {
     type SystemData = (
         Read<'a, DeltaTick>,
         ReadStorage<'a, Acceleration>,
-        WriteStorage<'a, Force>,
         WriteStorage<'a, Velocity>,
     );
 
-    fn run(&mut self, (delta, acc, mut force, mut vel): Self::SystemData) {
-        for (acc, force, vel) in (&acc, &mut force, &mut vel).join() {
+    fn run(&mut self, (delta, acc, mut vel): Self::SystemData) {
+        for (acc, vel) in (&acc, &mut vel).join() {
             vel.0 += acc.0 * delta.0 as f32;
-            if force.ticks.0 > 0u32 {
-                vel.0 += force.vec * delta.0 as f32;
-            }
-            if force.ticks.0 <= delta.0 {
-                force.ticks.0 = 0u32;
-                force.vec = Vector3::zeros();
-            } else {
-                force.ticks.0 -= delta.0;
-            }
         }
     }
 }

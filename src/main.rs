@@ -192,7 +192,6 @@ fn main() {
     world.register::<Position>();
     world.register::<Velocity>();
     world.register::<Acceleration>();
-    world.register::<Force>();
     world.register::<Angle2>();
     world.register::<Input>();
     world.register::<Collider>();
@@ -205,7 +204,6 @@ fn main() {
         .with(Position(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::default())
         .with(Acceleration::gravity())
-        .with(Force::default())
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
