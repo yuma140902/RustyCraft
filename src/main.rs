@@ -192,10 +192,10 @@ fn main() {
     world.register::<Position>();
     world.register::<Velocity>();
     world.register::<Acceleration>();
-    world.register::<Force>();
     world.register::<Angle2>();
     world.register::<Input>();
     world.register::<Collider>();
+    world.register::<OnGround>();
     world.insert(DeltaTick(0));
     world.insert(game.world);
     println!("OK: init ECS World");
@@ -204,10 +204,10 @@ fn main() {
         .with(Position(Point3::new(4.0, 2.5, 4.0)))
         .with(Velocity::default())
         .with(Acceleration::gravity())
-        .with(Force::default())
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
+        .with(OnGround(false))
         .build();
     println!("OK: spawn player");
     let mut dispatcher = DispatcherBuilder::new()
@@ -223,14 +223,14 @@ fn main() {
             &[name_of_type!(VelocityController)],
         )
         .with(
-            VelocityAdjusterForCollisions,
-            name_of_type!(VelocityAdjusterForCollisions),
+            CollisionHandler,
+            name_of_type!(CollisionHandler),
             &[name_of_type!(VelocityUpdater)],
         )
         .with(
             PositionUpdater,
             name_of_type!(PositionUpdater),
-            &[name_of_type!(VelocityAdjusterForCollisions)],
+            &[name_of_type!(CollisionHandler)],
         )
         .build();
     println!("OK: init ECS Dispatcher");
@@ -291,6 +291,9 @@ fn main() {
             }
         }
 
+        // カーソルを非表示
+        game.sdl.mouse().show_cursor(is_paused);
+
         let (width, height) = game.window.drawable_size();
 
         // DeltaTickリソースを更新
@@ -328,6 +331,8 @@ fn main() {
         let player_vel = player_vel.get(player).unwrap();
         let player_acc = world.read_storage::<Acceleration>();
         let player_acc = player_acc.get(player).unwrap();
+        let player_is_on_ground = world.read_storage::<OnGround>();
+        let player_is_on_ground = player_is_on_ground.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -456,6 +461,7 @@ fn main() {
                     ));
                     ui.text(format!("Pitch: {:?}", player_angle.pitch()));
                     ui.text(format!("Yaw: {:?}", player_angle.yaw()));
+                    ui.text(format!("OnGround: {}", player_is_on_ground.0));
                     ui.text(format!("Pause: {}", is_paused));
                     ui.text(format!(
                         "Pressed Keys: {:?}",
