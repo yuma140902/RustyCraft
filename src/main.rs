@@ -196,6 +196,7 @@ fn main() {
     world.register::<Angle2>();
     world.register::<Input>();
     world.register::<Collider>();
+    world.register::<OnGround>();
     world.insert(DeltaTick(0));
     world.insert(game.world);
     println!("OK: init ECS World");
@@ -208,6 +209,7 @@ fn main() {
         .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
         .with(Input::new())
         .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
+        .with(OnGround(false))
         .build();
     println!("OK: spawn player");
     let mut dispatcher = DispatcherBuilder::new()
