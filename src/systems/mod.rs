@@ -95,14 +95,14 @@ impl<'a> System<'a> for VelocityController {
     type SystemData = (
         ReadStorage<'a, Input>,
         ReadStorage<'a, Angle2>,
+        ReadStorage<'a, OnGround>,
         WriteStorage<'a, Velocity>,
-        WriteStorage<'a, Force>,
     );
 
-    fn run(&mut self, (input, angle, mut vel, mut force): Self::SystemData) {
+    fn run(&mut self, (input, angle, is_on_ground, mut vel): Self::SystemData) {
         use sdl2::keyboard::Scancode;
 
-        for (input, angle, vel, force) in (&input, &angle, &mut vel, &mut force).join() {
+        for (input, angle, is_on_ground, vel) in (&input, &angle, &is_on_ground, &mut vel).join() {
             let front_on_ground =
                 Vector3::<f32>::new(angle.front().x, 0.0, angle.front().z).normalize();
             let up_on_ground = Vector3::<f32>::new(0.0, 1.0, 0.0);
@@ -121,21 +121,8 @@ impl<'a> System<'a> for VelocityController {
             if input.pressed_keys.contains(&Scancode::A) {
                 velocity -= *angle.right() * game_config::MOVE_SPEED;
             }
-            if input.pressed_keys.contains(&Scancode::Space) {
-                if force.ticks.0 == 0u32 {
-                    velocity += up_on_ground * game_config::JUMP_SPEED;
-                    // ジャンプのクールダウンのために使っている。本来はOnGroundみたいなフラグを用意すべき
-                    *force = Force {
-                        vec: Vector3::zeros(),
-                        ticks: DeltaTick(800),
-                    };
-                }
-                // if force.ticks.0 == 0u32 {
-                //     *force = Force {
-                //         vec: Vector3::new(0.0, game_config::GRAVITY * 2f32, 0.0),
-                //         ticks: DeltaTick(300),
-                //     }
-                // }
+            if input.pressed_keys.contains(&Scancode::Space) && is_on_ground.0 {
+                velocity += up_on_ground * game_config::JUMP_SPEED;
             }
             if input.pressed_keys.contains(&Scancode::LShift) {
                 velocity -= up_on_ground * game_config::MOVE_SPEED;
