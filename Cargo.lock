@@ -7,7 +7,6 @@ name = "RustyCraft"
 version = "0.1.0"
 dependencies = [
  "c_str_macro",
- "gl",
  "image",
  "imgui",
  "imgui-opengl-renderer",
@@ -16,6 +15,7 @@ dependencies = [
  "nalgebra-glm",
  "nameof",
  "parry3d",
+ "reverie-engine",
  "sdl2",
  "specs",
 ]
@@ -228,13 +228,6 @@ checksum = "5a668f699973d0f573d15749b7002a9ac9e1f9c6b220e7b165601334c173d8de"
 dependencies = [
  "color_quant",
  "weezl",
-]
-
-[[package]]
-name = "gl"
-version = "0.1.0"
-dependencies = [
- "gl_generator",
 ]
 
 [[package]]
@@ -700,6 +693,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8383f39639269cde97d255a32bdb68c047337295414940c68bdd30c2e13203ff"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "reverie-engine"
+version = "0.0.3"
+dependencies = [
+ "gl_generator",
+ "image",
+ "nalgebra",
 ]
 
 [[package]]

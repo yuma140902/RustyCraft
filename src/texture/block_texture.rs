@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use crate::block::{Block, Side};
 
-use super::texture_atlas::TextureUV;
+use re::texture::texture_atlas::TextureUV;
+use re::vao::vao_builder::CuboidTextures;
+use reverie_engine as re;
 
 pub type BlockTextures = HashMap<&'static str, TextureUV>;
 
@@ -31,5 +33,31 @@ pub fn get_texture_name(block: &Block, side: Side) -> &str {
             Side::BOTTOM => "grass_bottom",
             _ => "grass_side",
         },
+    }
+}
+
+pub fn generate_cuboid_texture<'a>(
+    block: &Block,
+    block_textures: &'a BlockTextures,
+) -> CuboidTextures<'a> {
+    CuboidTextures {
+        top: block_textures
+            .get(get_texture_name(block, Side::TOP))
+            .unwrap(),
+        bottom: block_textures
+            .get(get_texture_name(block, Side::BOTTOM))
+            .unwrap(),
+        south: block_textures
+            .get(get_texture_name(block, Side::SOUTH))
+            .unwrap(),
+        north: block_textures
+            .get(get_texture_name(block, Side::NORTH))
+            .unwrap(),
+        west: block_textures
+            .get(get_texture_name(block, Side::WEST))
+            .unwrap(),
+        east: block_textures
+            .get(get_texture_name(block, Side::EAST))
+            .unwrap(),
     }
 }

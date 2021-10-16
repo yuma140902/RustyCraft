@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use gl::Gl;
 use imgui_sdl2::ImguiSdl2;
 use nameof::name_of_type;
 use parry3d::shape::Cuboid;
@@ -15,18 +14,24 @@ use sdl2::VideoSubsystem;
 use specs::DispatcherBuilder;
 use specs::{Builder, World, WorldExt};
 
+use re::gl;
+use re::gl::Gl;
+use re::shader::Program;
+use re::shader::Shader;
+use re::shader::UniformVariables;
+use re::texture::image_manager::ImageLoadInfo;
+use re::texture::image_manager::ImageManager;
+use reverie_engine as re;
+
 pub mod block;
-pub mod buffer_builder;
 pub mod camera_computer;
 pub mod chunk;
 pub mod components;
 mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
-pub mod shader;
 mod systems;
 pub mod texture;
-pub mod vertex;
 pub mod world;
 use block::Block;
 use camera_computer::CameraComputer;
@@ -34,13 +39,9 @@ use chunk::Chunk;
 use components::*;
 use ecs_resources::*;
 use mymath::*;
-use shader::Program;
-use shader::Shader;
 use systems::*;
 use texture::block_texture;
 use texture::block_texture::BlockTextures;
-use texture::image_manager::ImageLoadInfo;
-use texture::image_manager::ImageManager;
 use world::GameWorld;
 
 type Point3 = nalgebra::Point3<f32>;
@@ -185,7 +186,7 @@ fn main() {
         .world
         .get_chunk(&chunk_zero_pos)
         .unwrap()
-        .generate_vertex_obj(&gl, &game.block_textures);
+        .generate_vertex_obj(gl, &game.block_textures, &game.shader);
     println!("OK: init main VBO and VAO");
 
     let mut world = World::new();
@@ -378,31 +379,30 @@ fn main() {
             100.0,
         );
 
-        unsafe {
+        let uniforms = {
             use c_str_macro::c_str;
-            let shader = &game.shader;
-            shader.set_used();
-            shader.set_mat4(c_str!("uModel"), &model_matrix);
-            shader.set_mat4(c_str!("uView"), &view_matrix);
-            shader.set_mat4(c_str!("uProjection"), &projection_matrix);
-            shader.set_float(c_str!("uAlpha"), alpha);
-            shader.set_vec3(
+            use re::shader::Uniform::*;
+            let mut uniforms = UniformVariables::new();
+            uniforms.add(c_str!("uModel"), Matrix4(&model_matrix));
+            uniforms.add(c_str!("uView"), Matrix4(&view_matrix));
+            uniforms.add(c_str!("uProjection"), Matrix4(&projection_matrix));
+            uniforms.add(c_str!("uAlpha"), Float(alpha));
+            uniforms.add(
                 c_str!("uViewPosition"),
-                player_pos.0.x,
-                player_pos.0.y,
-                player_pos.0.z,
+                TripleFloat(player_pos.0.x, player_pos.0.y, player_pos.0.z),
             );
-            shader.set_vector3(c_str!("uMaterial.specular"), &material_specular);
-            shader.set_float(c_str!("uMaterial.shininess"), material_shininess);
-            shader.set_vector3(c_str!("uLight.direction"), &light_direction);
-            shader.set_vector3(c_str!("uLight.ambient"), &ambient);
-            shader.set_vector3(c_str!("uLight.diffuse"), &diffuse);
-            shader.set_vector3(c_str!("uLight.specular"), &specular);
-        }
+            uniforms.add(c_str!("uMaterial.specular"), Vector3(&material_specular));
+            uniforms.add(c_str!("uMaterial.shininess"), Float(material_shininess));
+            uniforms.add(c_str!("uLight.direction"), Vector3(&light_direction));
+            uniforms.add(c_str!("uLight.ambient"), Vector3(&ambient));
+            uniforms.add(c_str!("uLight.diffuse"), Vector3(&diffuse));
+            uniforms.add(c_str!("uLight.specular"), Vector3(&specular));
+            uniforms
+        };
 
         unsafe {
             gl.BindTexture(gl::TEXTURE_2D, game.block_atlas_texture.gl_id);
-            vertex_obj.draw_triangles();
+            vertex_obj.draw_triangles(&uniforms);
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
         if cfg!(debug_assertions) && show_imgui {

@@ -5,8 +5,8 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
+reverie-engine = {path = "lib/reverie-engine"}
 sdl2 = "0.34.5"
-gl = {path = "lib/gl"}
 nalgebra = "0.29.0"
 nalgebra-glm = "0.15.0"
 parry3d = "0.7.0"

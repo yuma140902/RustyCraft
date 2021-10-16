@@ -1,14 +1,17 @@
-use std::collections::HashMap;
-
-use gl::Gl;
 use parry3d::bounding_volume::AABB;
 
+use re::gl::Gl;
+use re::shader::Program;
+use re::vao::vao_builder::VaoBuilder;
+use re::vao::Vao;
+use reverie_engine as re;
+
+use crate::block::Block;
 use crate::mymath::BlockPosInChunk;
 use crate::mymath::BlockPosInWorld;
 use crate::mymath::ChunkPos;
-use crate::{
-    block::Block, buffer_builder::BufferBuilder, texture::texture_atlas::TextureUV, vertex::Vertex,
-};
+use crate::texture::block_texture;
+use crate::texture::block_texture::BlockTextures;
 
 pub struct Chunk {
     blocks: Vec<Option<Block>>,
@@ -53,8 +56,13 @@ impl Chunk {
         vec
     }
 
-    pub fn generate_vertex_obj(&self, gl: &Gl, textures: &HashMap<&str, TextureUV>) -> Vertex {
-        let mut buffer_builder = BufferBuilder::with_capacity(100); //TODO: 100は適当。6 * 16^3 なら確実
+    pub fn generate_vertex_obj<'a>(
+        &self,
+        gl: &Gl,
+        textures: &BlockTextures,
+        shader: &'a Program,
+    ) -> Vao<'a> {
+        let mut buffer_builder = VaoBuilder::with_capacity(100); //TODO: 100は適当。6 * 16^3 なら確実
 
         for x in 0..16 {
             for y in 0..16 {
@@ -66,7 +74,8 @@ impl Chunk {
                     }
                     let block = block.unwrap();
                     let block_pos = BlockPosInChunk::new(x, y, z).unwrap();
-                    buffer_builder.add_block(
+                    add_block(
+                        &mut buffer_builder,
                         &BlockPosInWorld::from_chunk_pos(&self.position, &block_pos),
                         &block,
                         textures,
@@ -75,6 +84,32 @@ impl Chunk {
             }
         }
 
-        buffer_builder.generate_vertex_obj(gl)
+        buffer_builder.attatch_program(shader);
+        buffer_builder.build(gl)
     }
+}
+
+type Vector3 = nalgebra::Vector3<f32>;
+
+pub const UP: Vector3 = Vector3::new(0.0, 1.0, 0.0);
+pub const DOWN: Vector3 = Vector3::new(0.0, -1.0, 0.0);
+pub const NORTH: Vector3 = Vector3::new(1.0, 0.0, 0.0);
+pub const SOUTH: Vector3 = Vector3::new(-1.0, 0.0, 0.0);
+pub const WEST: Vector3 = Vector3::new(0.0, 0.0, 1.0);
+pub const EAST: Vector3 = Vector3::new(0.0, 0.0, -1.0);
+
+const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
+
+fn add_block(
+    builder: &mut VaoBuilder,
+    begin: &BlockPosInWorld,
+    block: &Block,
+    textures: &BlockTextures,
+) {
+    let begin = begin.cast::<f32>();
+    builder.add_cuboid(
+        &begin,
+        &(begin + BLOCK_SIZE),
+        &block_texture::generate_cuboid_texture(block, textures),
+    );
 }
