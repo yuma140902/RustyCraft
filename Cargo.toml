@@ -5,7 +5,7 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
-reverie-engine = {path = "lib/reverie-engine"}
+reverie-engine = "0.0.5"
 sdl2 = "0.34.5"
 nalgebra = "0.29.0"
 nalgebra-glm = "0.15.0"
