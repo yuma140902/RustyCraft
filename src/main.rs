@@ -199,8 +199,8 @@ fn main() {
 
     let mut last_tick = Instant::now();
 
-    let width = 900;
-    let height = 480;
+    let width = 800;
+    let height = 600;
 
     'main: loop {
         if game.window.process_event() {
