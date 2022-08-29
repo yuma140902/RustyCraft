@@ -1,9 +1,10 @@
 use parry3d::bounding_volume::AABB;
 
 use re::gl::Gl;
-use re::shader::Program;
-use re::vao::vao_builder::VaoBuilder;
-use re::vao::Vao;
+use re::Vao;
+use re::VaoBuffer;
+use re::VaoBuilder3DGeometry;
+use re::VaoConfig;
 use reverie_engine as re;
 
 use crate::block::Block;
@@ -60,9 +61,9 @@ impl Chunk {
         &self,
         gl: &Gl,
         textures: &BlockTextures,
-        shader: &'a Program,
+        config: &'a VaoConfig,
     ) -> Vao<'a> {
-        let mut buffer_builder = VaoBuilder::with_capacity(100); //TODO: 100は適当。6 * 16^3 なら確実
+        let mut buffer_builder = VaoBuffer::new();
 
         for x in 0..16 {
             for y in 0..16 {
@@ -84,8 +85,7 @@ impl Chunk {
             }
         }
 
-        buffer_builder.attatch_program(shader);
-        buffer_builder.build(gl)
+        buffer_builder.build(gl, config)
     }
 }
 
@@ -101,7 +101,7 @@ pub const EAST: Vector3 = Vector3::new(0.0, 0.0, -1.0);
 const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
 
 fn add_block(
-    builder: &mut VaoBuilder,
+    builder: &mut VaoBuffer,
     begin: &BlockPosInWorld,
     block: &Block,
     textures: &BlockTextures,

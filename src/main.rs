@@ -3,6 +3,7 @@ use std::path::Path;
 use imgui_sdl2::ImguiSdl2;
 use nameof::name_of_type;
 use parry3d::shape::Cuboid;
+use re::VaoConfigBuilder;
 use sdl2::keyboard::KeyboardState;
 use sdl2::mouse::MouseState;
 use sdl2::video::GLContext;
@@ -19,8 +20,8 @@ use re::gl::Gl;
 use re::shader::Program;
 use re::shader::Shader;
 use re::shader::UniformVariables;
-use re::texture::image_manager::ImageLoadInfo;
-use re::texture::image_manager::ImageManager;
+use re::ImageLoadInfo;
+use re::ImageManager;
 use reverie_engine as re;
 
 pub mod block;
@@ -121,12 +122,9 @@ impl<'a> Game<'a> {
 
         let mut image_manager = ImageManager::new(gl.clone());
         println!("OK: init ImageManager");
+        let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
         let block_atlas_texture = image_manager
-            .load_image(
-                Path::new("rsc/image/atlas/blocks.png"),
-                "atlas/blocks",
-                true,
-            )
+            .load_image(image, "atlas/blocks", true)
             .unwrap();
         println!(
             "OK: load {} {}x{}, #{}",
@@ -182,11 +180,12 @@ fn main() {
     chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
     game.world.add_chunk(chunk).unwrap();
 
+    let vao_config = VaoConfigBuilder::new(&game.shader).build();
     let vertex_obj = game
         .world
         .get_chunk(&chunk_zero_pos)
         .unwrap()
-        .generate_vertex_obj(gl, &game.block_textures, &game.shader);
+        .generate_vertex_obj(gl, &game.block_textures, &vao_config);
     println!("OK: init main VBO and VAO");
 
     let mut world = World::new();
