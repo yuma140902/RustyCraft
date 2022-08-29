@@ -1,16 +1,8 @@
 use std::path::Path;
+use std::time::Instant;
 
 use nameof::name_of_type;
 use parry3d::shape::Cuboid;
-use re::VaoConfigBuilder;
-use sdl2::keyboard::KeyboardState;
-use sdl2::mouse::MouseState;
-use sdl2::video::GLContext;
-use sdl2::video::Window;
-use sdl2::EventPump;
-use sdl2::Sdl;
-use sdl2::TimerSubsystem;
-use sdl2::VideoSubsystem;
 use specs::DispatcherBuilder;
 use specs::{Builder, World, WorldExt};
 
@@ -19,8 +11,12 @@ use re::gl::Gl;
 use re::shader::Program;
 use re::shader::Shader;
 use re::shader::UniformVariables;
+use re::Context;
 use re::ImageLoadInfo;
 use re::ImageManager;
+use re::ReverieEngine;
+use re::VaoConfigBuilder;
+use re::Window;
 use reverie_engine as re;
 
 pub mod block;
@@ -49,14 +45,11 @@ type Vector3 = nalgebra::Vector3<f32>;
 type Matrix4 = nalgebra::Matrix4<f32>;
 
 struct Game<'a> {
-    sdl: Sdl,
-    _video_subsystem: VideoSubsystem,
-    timer_subsystem: TimerSubsystem,
+    _engine: ReverieEngine,
     window: Window,
-    _gl_context: GLContext, /* GLContextを誰かが所有していないとOpenGLを使えない */
+    gl_context: Context<glutin::RawContext<glutin::PossiblyCurrent>>,
     gl: Gl,
     shader: Program,
-    event_pump: EventPump,
     _image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
     block_textures: BlockTextures,
@@ -65,41 +58,20 @@ struct Game<'a> {
 
 impl<'a> Game<'a> {
     fn init() -> Game<'a> {
-        let sdl = sdl2::init().unwrap();
-        println!("OK: init SDL2: {}", sdl2::version::version());
-        let video_subsystem = sdl.video().unwrap();
-        println!("OK: init SDL2 Video Subsystem");
-        let timer_subsystem = sdl.timer().unwrap();
-        println!("OK: init SDL2 Timer Subsystem");
+        let engine = ReverieEngine::new();
+        println!("OK: init ReverieEngine");
+        let window = engine.create_window();
+        println!("OK: init window");
+        let context = window.create_context_glutin();
+        println!("OK: init glutin context");
 
-        {
-            let gl_attr = video_subsystem.gl_attr();
-            gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-            gl_attr.set_context_version(3, 3);
-            let (major, minor) = gl_attr.context_version();
-            println!("OK: init OpenGL: version {}.{}", major, minor);
-        }
-
-        let window = video_subsystem
-            .window("SDL", 900, 480)
-            .opengl()
-            .position_centered()
-            .resizable()
-            .build()
-            .unwrap();
-        println!("OK: init window '{}'", window.title());
-
-        let _gl_context = window.gl_create_context().unwrap();
-        let gl = Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
+        let gl = context.gl();
         println!("OK: init GL context");
 
         let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
         let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
         let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
         println!("OK: shader program");
-
-        let event_pump = sdl.event_pump().unwrap();
-        println!("OK: init event pump");
 
         let mut image_manager = ImageManager::new(gl.clone());
         println!("OK: init ImageManager");
@@ -119,14 +91,11 @@ impl<'a> Game<'a> {
         let world = GameWorld::new();
 
         Game {
-            sdl,
-            _video_subsystem: video_subsystem,
-            timer_subsystem,
+            _engine: engine,
             window,
-            _gl_context,
+            gl_context: context,
             gl,
             shader,
-            event_pump,
             _image_manager: image_manager,
             block_atlas_texture,
             block_textures,
@@ -213,20 +182,12 @@ fn main() {
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
 
-    let (width, height) = game.window.drawable_size();
-    let center_x: i32 = width as i32 / 2;
-    let center_y: i32 = height as i32 / 2;
-    game.sdl
-        .mouse()
-        .warp_mouse_in_window(&game.window, center_x, center_y);
-
     /* デバッグ用 */
     let depth_test = true;
     let blend = true;
     let wireframe = false;
     let culling = true;
     let alpha: f32 = 1.0;
-    let mut is_paused = false;
     /* ベクトルではなく色 */
     let material_specular = Vector3::new(0.2, 0.2, 0.2);
     let material_shininess: f32 = 0.1;
@@ -236,54 +197,21 @@ fn main() {
     let diffuse = Vector3::new(0.5, 0.5, 0.5);
     let specular = Vector3::new(0.2, 0.2, 0.2);
 
-    let mut last_tick = game.timer_subsystem.ticks();
+    let mut last_tick = Instant::now();
+
+    let width = 900;
+    let height = 480;
 
     'main: loop {
-        for event in game.event_pump.poll_iter() {
-            use sdl2::event::Event;
-            use sdl2::keyboard::Keycode;
-            match event {
-                Event::Quit { .. } => break 'main,
-                Event::KeyUp {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => {
-                    is_paused = !is_paused;
-                }
-                _ => {}
-            }
+        if game.window.process_event() {
+            break 'main;
         }
-
-        // カーソルを非表示
-        game.sdl.mouse().show_cursor(is_paused);
-
-        let (width, height) = game.window.drawable_size();
 
         // DeltaTickリソースを更新
         {
             let mut delta_tick = world.write_resource::<DeltaTick>();
-            let current_tick = game.timer_subsystem.ticks();
-            delta_tick.0 = current_tick - last_tick;
-            last_tick = current_tick;
-        }
-        // Inputコンポーネントを更新
-        if !is_paused {
-            let mut input = world.write_storage::<Input>();
-            let mouse = MouseState::new(&game.event_pump);
-            let keyboard = KeyboardState::new(&game.event_pump);
-            let center_x: i32 = width as i32 / 2;
-            let center_y: i32 = height as i32 / 2;
-            *input.get_mut(player).unwrap() = Input {
-                mouse_delta: nalgebra::Vector2::<i32>::new(
-                    center_x - mouse.x(),
-                    center_y - mouse.y(),
-                ),
-                pressed_keys: keyboard.pressed_scancodes().collect(),
-            };
-            // マウスを中心に戻す
-            game.sdl
-                .mouse()
-                .warp_mouse_in_window(&game.window, center_x, center_y);
+            delta_tick.0 = last_tick.elapsed().as_millis() as u32;
+            last_tick = Instant::now();
         }
         dispatcher.dispatch(&mut world);
         let player_pos = world.read_storage::<Position>();
@@ -368,7 +296,7 @@ fn main() {
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 
-        game.window.gl_swap_window();
+        game.gl_context.swap_buffers();
 
         std::thread::sleep(std::time::Duration::new(0, 1_000_000_000u32 / 60)); // 60FPS
     }

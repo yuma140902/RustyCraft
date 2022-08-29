@@ -2,11 +2,9 @@
 name = "RustyCraft"
 version = "0.1.0"
 edition = "2018"
-build = "build.rs"
 
 [dependencies]
 reverie-engine = "0.0.5"
-sdl2 = "0.34.5"
 nalgebra = "0.29.0"
 nalgebra-glm = "0.15.0"
 parry3d = "0.7.0"
@@ -14,3 +12,4 @@ c_str_macro = "1.0.3"
 nameof = "1.2"
 image = "0.23.14"
 specs = { version = "0.17.0", features = ["specs-derive"] }
+glutin = "0.29.1"

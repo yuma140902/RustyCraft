@@ -90,33 +90,9 @@ impl<'a> System<'a> for VelocityController {
     );
 
     fn run(&mut self, (input, angle, is_on_ground, mut vel): Self::SystemData) {
-        use sdl2::keyboard::Scancode;
-
-        for (input, angle, is_on_ground, vel) in (&input, &angle, &is_on_ground, &mut vel).join() {
-            let front_on_ground =
-                Vector3::<f32>::new(angle.front().x, 0.0, angle.front().z).normalize();
-            let up_on_ground = Vector3::<f32>::new(0.0, 1.0, 0.0);
-
-            let mut velocity = Vector3::<f32>::new(0.0, 0.0, 0.0);
-
-            if input.pressed_keys.contains(&Scancode::W) {
-                velocity += front_on_ground * game_config::MOVE_SPEED;
-            }
-            if input.pressed_keys.contains(&Scancode::S) {
-                velocity -= front_on_ground * game_config::MOVE_SPEED;
-            }
-            if input.pressed_keys.contains(&Scancode::D) {
-                velocity += angle.right() * game_config::MOVE_SPEED;
-            }
-            if input.pressed_keys.contains(&Scancode::A) {
-                velocity -= *angle.right() * game_config::MOVE_SPEED;
-            }
-            if input.pressed_keys.contains(&Scancode::Space) && is_on_ground.0 {
-                velocity += up_on_ground * game_config::JUMP_SPEED;
-            }
-            if input.pressed_keys.contains(&Scancode::LShift) {
-                velocity -= up_on_ground * game_config::MOVE_SPEED;
-            }
+        for (_input, _angle, _is_on_ground, vel) in (&input, &angle, &is_on_ground, &mut vel).join()
+        {
+            let velocity = Vector3::<f32>::new(0.0, 0.0, 0.0);
 
             vel.0.x = 0f32;
             vel.0.z = 0f32;
