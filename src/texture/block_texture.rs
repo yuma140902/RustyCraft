@@ -11,7 +11,7 @@ use reverie_engine as re;
 pub type BlockTextures =
     HashMap<&'static str, TextureUV<Const<64>, Const<64>, Const<256>, Const<256>>>;
 
-pub fn get_textures_in_atlas(atlas_width: u32, atlas_height: u32) -> BlockTextures {
+pub fn get_textures_in_atlas() -> BlockTextures {
     let mut dic = HashMap::new();
     dic.insert(
         "grass_side",

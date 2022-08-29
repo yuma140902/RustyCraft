@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use imgui_sdl2::ImguiSdl2;
 use nameof::name_of_type;
 use parry3d::shape::Cuboid;
 use re::VaoConfigBuilder;
@@ -57,9 +56,6 @@ struct Game<'a> {
     _gl_context: GLContext, /* GLContextを誰かが所有していないとOpenGLを使えない */
     gl: Gl,
     shader: Program,
-    imgui: imgui::Context,
-    imgui_sdl2: ImguiSdl2,
-    imgui_renderer: imgui_opengl_renderer::Renderer,
     event_pump: EventPump,
     _image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
@@ -102,21 +98,6 @@ impl<'a> Game<'a> {
         let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
         println!("OK: shader program");
 
-        let mut imgui = imgui::Context::create();
-        imgui.set_ini_filename(None);
-        let imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
-        let imgui_renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
-            video_subsystem.gl_get_proc_address(s) as _
-        });
-        {
-            use imgui::im_str;
-            println!(
-                "OK: init ImGui (Platform: {}, Renderer: {})",
-                imgui.platform_name().unwrap_or(im_str!("Unknown")),
-                imgui.renderer_name().unwrap_or(im_str!("Unknown"))
-            );
-        }
-
         let event_pump = sdl.event_pump().unwrap();
         println!("OK: init event pump");
 
@@ -133,10 +114,7 @@ impl<'a> Game<'a> {
             block_atlas_texture.height,
             block_atlas_texture.gl_id
         );
-        let block_textures = block_texture::get_textures_in_atlas(
-            block_atlas_texture.width,
-            block_atlas_texture.height,
-        );
+        let block_textures = block_texture::get_textures_in_atlas();
 
         let world = GameWorld::new();
 
@@ -148,9 +126,6 @@ impl<'a> Game<'a> {
             _gl_context,
             gl,
             shader,
-            imgui,
-            imgui_sdl2,
-            imgui_renderer,
             event_pump,
             _image_manager: image_manager,
             block_atlas_texture,
@@ -246,31 +221,25 @@ fn main() {
         .warp_mouse_in_window(&game.window, center_x, center_y);
 
     /* デバッグ用 */
-    let mut depth_test = true;
-    let mut blend = true;
-    let mut wireframe = false;
-    let mut culling = true;
-    let mut alpha: f32 = 1.0;
+    let depth_test = true;
+    let blend = true;
+    let wireframe = false;
+    let culling = true;
+    let alpha: f32 = 1.0;
     let mut is_paused = false;
-    let mut show_imgui = false;
     /* ベクトルではなく色 */
-    let mut material_specular = Vector3::new(0.2, 0.2, 0.2);
-    let mut material_shininess: f32 = 0.1;
-    let mut light_direction = Vector3::new(1.0, 1.0, 0.0);
+    let material_specular = Vector3::new(0.2, 0.2, 0.2);
+    let material_shininess: f32 = 0.1;
+    let light_direction = Vector3::new(1.0, 1.0, 0.0);
     /* ambient, diffuse, specular はベクトルではなく色 */
-    let mut ambient = Vector3::new(0.3, 0.3, 0.3);
-    let mut diffuse = Vector3::new(0.5, 0.5, 0.5);
-    let mut specular = Vector3::new(0.2, 0.2, 0.2);
+    let ambient = Vector3::new(0.3, 0.3, 0.3);
+    let diffuse = Vector3::new(0.5, 0.5, 0.5);
+    let specular = Vector3::new(0.2, 0.2, 0.2);
 
     let mut last_tick = game.timer_subsystem.ticks();
 
     'main: loop {
         for event in game.event_pump.poll_iter() {
-            game.imgui_sdl2.handle_event(&mut game.imgui, &event);
-            if game.imgui_sdl2.ignore_event(&event) {
-                continue;
-            }
-
             use sdl2::event::Event;
             use sdl2::keyboard::Keycode;
             match event {
@@ -280,12 +249,6 @@ fn main() {
                     ..
                 } => {
                     is_paused = !is_paused;
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::F1),
-                    ..
-                } => {
-                    show_imgui = !show_imgui;
                 }
                 _ => {}
             }
@@ -328,11 +291,11 @@ fn main() {
         let player_angle = world.read_storage::<Angle2>();
         let player_angle = player_angle.get(player).unwrap();
         let player_vel = world.read_storage::<Velocity>();
-        let player_vel = player_vel.get(player).unwrap();
+        let _player_vel = player_vel.get(player).unwrap();
         let player_acc = world.read_storage::<Acceleration>();
-        let player_acc = player_acc.get(player).unwrap();
+        let _player_acc = player_acc.get(player).unwrap();
         let player_is_on_ground = world.read_storage::<OnGround>();
-        let player_is_on_ground = player_is_on_ground.get(player).unwrap();
+        let _player_is_on_ground = player_is_on_ground.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -403,150 +366,6 @@ fn main() {
             gl.BindTexture(gl::TEXTURE_2D, game.block_atlas_texture.gl_id);
             vertex_obj.draw_triangles(&uniforms);
             gl.BindTexture(gl::TEXTURE_2D, 0);
-        }
-        if cfg!(debug_assertions) && show_imgui {
-            game.imgui_sdl2.prepare_frame(
-                game.imgui.io_mut(),
-                &game.window,
-                &game.event_pump.mouse_state(),
-            );
-
-            let ui = game.imgui.frame();
-            use imgui::im_str;
-            imgui::Window::new(im_str!("Information"))
-                .size([300.0, 340.0], imgui::Condition::FirstUseEver)
-                .position([5.0, 5.0], imgui::Condition::FirstUseEver)
-                .build(&ui, || {
-                    ui.text(im_str!("OpenGL Sandbox 1.0"));
-
-                    ui.separator();
-
-                    ui.text(format!("FPS: {:.1}", ui.io().framerate));
-                    let display_size = ui.io().display_size;
-                    ui.text(format!(
-                        "Display Size: ({:.1}, {:.1})",
-                        display_size[0], display_size[1]
-                    ));
-                    let mouse_pos = ui.io().mouse_pos;
-                    ui.text(format!(
-                        "Mouse Position: ({:.1}, {:.1})",
-                        mouse_pos[0], mouse_pos[1]
-                    ));
-
-                    ui.separator();
-
-                    ui.checkbox(im_str!("Depth Test"), &mut depth_test);
-                    ui.checkbox(im_str!("Blend"), &mut blend);
-                    ui.checkbox(im_str!("Wireframe"), &mut wireframe);
-                    ui.checkbox(im_str!("Culling"), &mut culling);
-
-                    ui.separator();
-
-                    ui.text(format!(
-                        "Position: ({:.2}, {:.2}, {:.2})",
-                        player_pos.0.x, player_pos.0.y, player_pos.0.z
-                    ));
-                    ui.text(format!(
-                        "Velocity*10^3: ({:.2}, {:.2}, {:.2})",
-                        player_vel.0.x * 1000f32,
-                        player_vel.0.y * 1000f32,
-                        player_vel.0.z * 1000f32
-                    ));
-                    ui.text(format!(
-                        "Acceleration*10^3: ({:.2}, {:.2}, {:.2})",
-                        player_acc.0.x * 1000f32,
-                        player_acc.0.y * 1000f32,
-                        player_acc.0.z * 1000f32
-                    ));
-                    ui.text(format!("Pitch: {:?}", player_angle.pitch()));
-                    ui.text(format!("Yaw: {:?}", player_angle.yaw()));
-                    ui.text(format!("OnGround: {}", player_is_on_ground.0));
-                    ui.text(format!("Pause: {}", is_paused));
-                    ui.text(format!(
-                        "Pressed Keys: {:?}",
-                        world
-                            .read_storage::<Input>()
-                            .get(player)
-                            .unwrap()
-                            .pressed_keys
-                    ));
-                });
-            imgui::Window::new(im_str!("Light"))
-                .collapsed(true, imgui::Condition::FirstUseEver)
-                .size([300.0, 450.0], imgui::Condition::FirstUseEver)
-                .position([600.0, 10.0], imgui::Condition::FirstUseEver)
-                .build(&ui, || {
-                    imgui::Slider::new(im_str!("Alpha"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut alpha);
-
-                    ui.separator();
-
-                    imgui::Slider::new(im_str!("Material Specular X"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut material_specular.x);
-                    imgui::Slider::new(im_str!("Material Specular Y"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut material_specular.y);
-                    imgui::Slider::new(im_str!("Material Specular Z"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut material_specular.z);
-
-                    imgui::Slider::new(im_str!("Material Shininess"))
-                        .range(0.0..=2.0)
-                        .build(&ui, &mut material_shininess);
-
-                    ui.separator();
-
-                    imgui::Slider::new(im_str!("Direction X"))
-                        .range(-1.0..=1.0)
-                        .build(&ui, &mut light_direction.x);
-                    imgui::Slider::new(im_str!("Direction Y"))
-                        .range(-1.0..=1.0)
-                        .build(&ui, &mut light_direction.y);
-                    imgui::Slider::new(im_str!("Direction Z"))
-                        .range(-1.0..=1.0)
-                        .build(&ui, &mut light_direction.z);
-
-                    ui.separator();
-
-                    imgui::Slider::new(im_str!("Ambient R"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut ambient.x);
-                    imgui::Slider::new(im_str!("Ambient G"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut ambient.y);
-                    imgui::Slider::new(im_str!("Ambient B"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut ambient.z);
-
-                    ui.separator();
-
-                    imgui::Slider::new(im_str!("Diffuse R"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut diffuse.x);
-                    imgui::Slider::new(im_str!("Diffuse G"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut diffuse.y);
-                    imgui::Slider::new(im_str!("Diffuse B"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut diffuse.z);
-
-                    ui.separator();
-
-                    imgui::Slider::new(im_str!("Specular R"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut specular.x);
-                    imgui::Slider::new(im_str!("Specular G"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut specular.y);
-                    imgui::Slider::new(im_str!("Specular B"))
-                        .range(0.0..=1.0)
-                        .build(&ui, &mut specular.z);
-                });
-
-            game.imgui_sdl2.prepare_render(&ui, &game.window);
-            game.imgui_renderer.render(ui);
         }
 
         game.window.gl_swap_window();
