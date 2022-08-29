@@ -1,10 +1,4 @@
 use std::path::Path;
-use std::time::Instant;
-
-use nameof::name_of_type;
-use parry3d::shape::Cuboid;
-use specs::DispatcherBuilder;
-use specs::{Builder, World, WorldExt};
 
 use re::gl;
 use re::gl::Gl;
@@ -26,20 +20,20 @@ pub mod components;
 mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
-mod systems;
+mod player;
 pub mod texture;
 pub mod world;
 use block::Block;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
-use components::*;
-use ecs_resources::*;
 use mymath::*;
-use systems::*;
 use texture::block_texture;
 use texture::block_texture::BlockTextures;
 use world::GameWorld;
 
+use crate::player::Player;
+
+#[allow(dead_code)]
 type Point3 = nalgebra::Point3<f32>;
 type Vector3 = nalgebra::Vector3<f32>;
 type Matrix4 = nalgebra::Matrix4<f32>;
@@ -132,52 +126,8 @@ fn main() {
         .generate_vertex_obj(gl, &game.block_textures, &vao_config);
     println!("OK: init main VBO and VAO");
 
-    let mut world = World::new();
-    world.register::<Position>();
-    world.register::<Velocity>();
-    world.register::<Acceleration>();
-    world.register::<Angle2>();
-    world.register::<Input>();
-    world.register::<Collider>();
-    world.register::<OnGround>();
-    world.insert(DeltaTick(0));
-    world.insert(game.world);
-    println!("OK: init ECS World");
-    let player = world
-        .create_entity()
-        .with(Position(Point3::new(4.0, 2.5, 4.0)))
-        .with(Velocity::default())
-        .with(Acceleration::gravity())
-        .with(Angle2::new(Deg(225.0f32), Deg(0.0f32)))
-        .with(Input::new())
-        .with(Collider(Cuboid::new(Vector3::new(0.15, 0.45, 0.15))))
-        .with(OnGround(false))
-        .build();
+    let player = Player::default();
     println!("OK: spawn player");
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(AngleController, name_of_type!(AngleController), &[])
-        .with(
-            VelocityController,
-            name_of_type!(VelocityController),
-            &[name_of_type!(AngleController)],
-        )
-        .with(
-            VelocityUpdater,
-            name_of_type!(VelocityUpdater),
-            &[name_of_type!(VelocityController)],
-        )
-        .with(
-            CollisionHandler,
-            name_of_type!(CollisionHandler),
-            &[name_of_type!(VelocityUpdater)],
-        )
-        .with(
-            PositionUpdater,
-            name_of_type!(PositionUpdater),
-            &[name_of_type!(CollisionHandler)],
-        )
-        .build();
-    println!("OK: init ECS Dispatcher");
 
     let camera = CameraComputer::new();
     println!("OK: init camera computer");
@@ -197,8 +147,6 @@ fn main() {
     let diffuse = Vector3::new(0.5, 0.5, 0.5);
     let specular = Vector3::new(0.2, 0.2, 0.2);
 
-    let mut last_tick = Instant::now();
-
     let width = 800;
     let height = 600;
 
@@ -206,24 +154,6 @@ fn main() {
         if game.window.process_event() {
             break 'main;
         }
-
-        // DeltaTickリソースを更新
-        {
-            let mut delta_tick = world.write_resource::<DeltaTick>();
-            delta_tick.0 = last_tick.elapsed().as_millis() as u32;
-            last_tick = Instant::now();
-        }
-        dispatcher.dispatch(&mut world);
-        let player_pos = world.read_storage::<Position>();
-        let player_pos = player_pos.get(player).unwrap();
-        let player_angle = world.read_storage::<Angle2>();
-        let player_angle = player_angle.get(player).unwrap();
-        let player_vel = world.read_storage::<Velocity>();
-        let _player_vel = player_vel.get(player).unwrap();
-        let player_acc = world.read_storage::<Acceleration>();
-        let _player_acc = player_acc.get(player).unwrap();
-        let player_is_on_ground = world.read_storage::<OnGround>();
-        let _player_is_on_ground = player_is_on_ground.get(player).unwrap();
 
         unsafe {
             if depth_test {
@@ -261,7 +191,7 @@ fn main() {
 
         let model_matrix =
             nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
-        let view_matrix = camera.compute_view_matrix(&player_angle, &player_pos);
+        let view_matrix = camera.compute_view_matrix(&player.angle, &player.pos);
         let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
             *Deg(45.0f32).rad(),
@@ -279,7 +209,7 @@ fn main() {
             uniforms.add(c_str!("uAlpha"), Float(alpha));
             uniforms.add(
                 c_str!("uViewPosition"),
-                TripleFloat(player_pos.0.x, player_pos.0.y, player_pos.0.z),
+                TripleFloat(player.pos.0.x, player.pos.0.y, player.pos.0.z),
             );
             uniforms.add(c_str!("uMaterial.specular"), Vector3(&material_specular));
             uniforms.add(c_str!("uMaterial.shininess"), Float(material_shininess));

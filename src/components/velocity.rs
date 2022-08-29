@@ -1,6 +1,4 @@
 use nalgebra::Vector3;
-use specs::{Component, VecStorage};
 
-#[derive(Component, Debug, Default)]
-#[storage(VecStorage)]
+#[derive(Debug, Default)]
 pub struct Velocity(pub Vector3<f32>);

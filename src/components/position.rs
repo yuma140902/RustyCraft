@@ -1,6 +1,4 @@
 use nalgebra::Point3;
-use specs::{Component, VecStorage};
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
+#[derive(Debug)]
 pub struct Position(pub Point3<f32>);

@@ -1,10 +1,8 @@
 use nalgebra::Vector3;
-use specs::{Component, VecStorage};
 
 use crate::game_config;
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
+#[derive(Debug)]
 pub struct Acceleration(pub Vector3<f32>);
 
 impl Acceleration {

@@ -1,10 +1,8 @@
 use nalgebra::Vector3;
-use specs::{Component, HashMapStorage};
 
 use crate::mymath::Deg;
 
-#[derive(Component, Debug)]
-#[storage(HashMapStorage)]
+#[derive(Debug)]
 pub struct Angle2 {
     pitch: Deg,
     yaw: Deg,

@@ -1,5 +1,2 @@
-use specs::{Component, VecStorage};
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
+#[derive(Debug)]
 pub struct OnGround(pub bool);

@@ -1,8 +1,6 @@
 use nalgebra::Vector2;
-use specs::{Component, HashMapStorage};
 
-#[derive(Component, Debug)]
-#[storage(HashMapStorage)]
+#[derive(Debug)]
 pub struct Input {
     pub mouse_delta: Vector2<i32>,
 }
