@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use c_str_macro::c_str;
 use re::gl;
 use re::shader::Program;
 use re::shader::Shader;
@@ -34,8 +35,12 @@ fn main() {
     let context = window.create_context_glutin();
     let gl = context.gl();
 
-    let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
-    let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
+    let vert_shader =
+        Shader::from_vert_code(gl.clone(), c_str!(include_str!("../rsc/shader/shader.vs")))
+            .unwrap();
+    let frag_shader =
+        Shader::from_frag_code(gl.clone(), c_str!(include_str!("../rsc/shader/shader.fs")))
+            .unwrap();
     let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
 
     let mut image_manager = ImageManager::new(gl.clone());
