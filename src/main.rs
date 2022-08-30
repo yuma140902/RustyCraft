@@ -121,7 +121,7 @@ fn main() {
 
         let model_matrix =
             nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
-        let view_matrix = camera.compute_view_matrix(&player.angle, &player.pos);
+        let view_matrix = camera.compute_view_matrix(&player);
         let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
             deg_to_rad(45.0f32),
