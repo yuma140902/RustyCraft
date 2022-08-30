@@ -1,6 +1,6 @@
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Point3};
 
-use crate::components::{Angle2, Position};
+use crate::player::Angle2;
 
 pub struct CameraComputer {}
 
@@ -11,10 +11,10 @@ impl CameraComputer {
 
     const PLAYER_EYE_DIFF: nalgebra::Vector3<f32> = nalgebra::Vector3::new(0.0, 0.3, 0.0);
 
-    pub fn compute_view_matrix(&self, angle: &Angle2, pos: &Position) -> Matrix4<f32> {
+    pub fn compute_view_matrix(&self, angle: &Angle2, pos: &Point3<f32>) -> Matrix4<f32> {
         Matrix4::<f32>::look_at_rh(
-            &(pos.0 + CameraComputer::PLAYER_EYE_DIFF),
-            &(pos.0 + angle.front()),
+            &(pos + CameraComputer::PLAYER_EYE_DIFF),
+            &(pos + angle.front()),
             &angle.up(),
         )
     }

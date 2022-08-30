@@ -16,7 +16,6 @@ use reverie_engine as re;
 pub mod block;
 pub mod camera_computer;
 pub mod chunk;
-pub mod components;
 mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
@@ -193,7 +192,7 @@ fn main() {
             uniforms.add(c_str!("uAlpha"), Float(alpha));
             uniforms.add(
                 c_str!("uViewPosition"),
-                TripleFloat(player.pos.0.x, player.pos.0.y, player.pos.0.z),
+                TripleFloat(player.pos.x, player.pos.y, player.pos.z),
             );
             uniforms.add(c_str!("uMaterial.specular"), Vector3(&material_specular));
             uniforms.add(c_str!("uMaterial.shininess"), Float(material_shininess));
