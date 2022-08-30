@@ -2,13 +2,13 @@ use nalgebra::{Matrix4, Point3, Vector3};
 
 use crate::mymath::deg_to_rad;
 
-pub struct Player {
+pub struct Camera {
     pub pos: Point3<f32>,
     pub pitch_rad: f32,
     pub yaw_rad: f32,
 }
 
-impl Default for Player {
+impl Default for Camera {
     fn default() -> Self {
         Self {
             pos: Point3::new(4.0, 3.6, 4.0),
@@ -18,7 +18,7 @@ impl Default for Player {
     }
 }
 
-impl Player {
+impl Camera {
     pub fn compute_view_matrix(&self) -> Matrix4<f32> {
         let (front, _right, up) = calc_front_right_up(self.pitch_rad, self.yaw_rad);
         Matrix4::<f32>::look_at_rh(&self.pos, &(self.pos + front), &up)

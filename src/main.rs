@@ -12,13 +12,12 @@ use re::TextureAtlasPos;
 use re::VaoConfigBuilder;
 use reverie_engine as re;
 
+mod camera;
 mod mymath;
-mod player;
 mod world;
+use camera::Camera;
 use mymath::*;
 use world::World;
-
-use crate::player::Player;
 
 #[allow(dead_code)]
 type Point3 = nalgebra::Point3<f32>;
@@ -98,7 +97,7 @@ fn main() {
 
     let vertex_obj = world.generate_vertex_obj(&gl, &cuboid_texture, &vao_config);
 
-    let player = Player::default();
+    let camera = Camera::default();
 
     let width = 800;
     let height = 600;
@@ -117,7 +116,7 @@ fn main() {
 
         let model_matrix =
             nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
-        let view_matrix = player.compute_view_matrix();
+        let view_matrix = camera.compute_view_matrix();
         let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
             deg_to_rad(45.0f32),
@@ -135,7 +134,7 @@ fn main() {
             uniforms.add(c_str!("uAlpha"), Float(alpha));
             uniforms.add(
                 c_str!("uViewPosition"),
-                TripleFloat(player.pos.x, player.pos.y, player.pos.z),
+                TripleFloat(camera.pos.x, camera.pos.y, camera.pos.z),
             );
             uniforms.add(c_str!("uMaterial.specular"), Vector3(&material_specular));
             uniforms.add(c_str!("uMaterial.shininess"), Float(material_shininess));
