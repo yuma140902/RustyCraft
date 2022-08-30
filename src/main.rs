@@ -76,7 +76,7 @@ impl<'a> Game<'a> {
         );
         let block_textures = block_texture::get_textures_in_atlas();
 
-        let chunk = World::new(ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0)));
+        let world = World::new();
 
         Game {
             _engine: engine,
@@ -87,7 +87,7 @@ impl<'a> Game<'a> {
             _image_manager: image_manager,
             block_atlas_texture,
             block_textures,
-            world: chunk,
+            world,
         }
     }
 }

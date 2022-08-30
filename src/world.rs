@@ -14,19 +14,13 @@ use crate::mymath::ChunkPos;
 
 pub struct World {
     blocks: Vec<Option<Block>>,
-    position: ChunkPos,
 }
 
 impl World {
-    pub fn new(position: ChunkPos) -> World {
+    pub fn new() -> World {
         World {
             blocks: std::iter::repeat_with(|| None).take(16 * 16 * 16).collect(),
-            position,
         }
-    }
-
-    pub fn position(&self) -> &ChunkPos {
-        &self.position
     }
 
     pub fn set_block(&mut self, block: &Block, pos: &BlockPosInChunk) {
@@ -51,12 +45,7 @@ impl World {
                     }
                     let block = block.unwrap();
                     let block_pos = BlockPosInChunk::new(x, y, z).unwrap();
-                    add_block(
-                        &mut buffer_builder,
-                        &BlockPosInWorld::from_chunk_pos(&self.position, &block_pos),
-                        &block,
-                        textures,
-                    );
+                    add_block(&mut buffer_builder, &block_pos, &block, textures);
                 }
             }
         }
@@ -71,7 +60,7 @@ const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
 
 fn add_block(
     builder: &mut VaoBuffer,
-    begin: &BlockPosInWorld,
+    begin: &BlockPosInChunk,
     block: &Block,
     textures: &BlockTextures,
 ) {
