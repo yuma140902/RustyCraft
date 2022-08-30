@@ -40,18 +40,10 @@ fn main() {
     let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
 
     let mut image_manager = ImageManager::new(gl.clone());
-    println!("OK: init ImageManager");
     let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
     let block_atlas_texture = image_manager
         .load_image(image, "atlas/blocks", true)
         .unwrap();
-    println!(
-        "OK: load {} {}x{}, #{}",
-        block_atlas_texture.id,
-        block_atlas_texture.width,
-        block_atlas_texture.height,
-        block_atlas_texture.gl_id
-    );
 
     let top_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 1));
     let bottom_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 2));
@@ -107,13 +99,10 @@ fn main() {
         .build();
 
     let vertex_obj = world.generate_vertex_obj(&gl, &cuboid_texture, &vao_config);
-    println!("OK: init main VBO and VAO");
 
     let player = Player::default();
-    println!("OK: spawn player");
 
     let camera = CameraComputer::new();
-    println!("OK: init camera computer");
 
     let width = 800;
     let height = 600;
