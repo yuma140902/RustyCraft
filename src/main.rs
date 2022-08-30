@@ -124,7 +124,7 @@ fn main() {
         let view_matrix = camera.compute_view_matrix(&player.angle, &player.pos);
         let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
-            *Deg(45.0f32).rad(),
+            deg_to_rad(45.0f32),
             0.1,
             100.0,
         );

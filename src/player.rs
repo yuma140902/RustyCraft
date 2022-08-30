@@ -1,7 +1,7 @@
 use nalgebra::{Point3, Vector3};
 use parry3d::shape::Cuboid;
 
-use crate::mymath::Deg;
+use crate::mymath::deg_to_rad;
 
 pub struct Player {
     pub pos: Point3<f32>,
@@ -14,7 +14,7 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             pos: Point3::new(4.0, 2.5, 4.0),
-            angle: Angle2::new(Deg(225.0_f32), Deg(0.0_f32)),
+            angle: Angle2::new(225.0_f32, 0.0_f32),
             collider: Cuboid::new(Vector3::new(0.15, 0.45, 0.15)),
             on_ground: false,
         }
@@ -28,21 +28,30 @@ pub struct Angle2 {
 }
 
 impl Angle2 {
-    pub fn new(pitch: Deg, yaw: Deg) -> Self {
-        let (front, _right, up) = Self::calc_front_right_up(pitch, yaw);
+    pub fn new(pitch_deg: f32, yaw_deg: f32) -> Self {
+        let (front, _right, up) = Self::calc_front_right_up(pitch_deg, yaw_deg);
         Self { front, up }
     }
 
-    fn calc_front_right_up(pitch: Deg, yaw: Deg) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
-        let front =
-            Vector3::new(yaw.cos() * pitch.sin(), yaw.sin(), yaw.cos() * pitch.cos()).normalize();
+    fn calc_front_right_up(
+        pitch_deg: f32,
+        yaw_deg: f32,
+    ) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
+        let pitch_rad = deg_to_rad(pitch_deg);
+        let yaw_rad = deg_to_rad(yaw_deg);
+        let front = Vector3::new(
+            yaw_rad.cos() * pitch_rad.sin(),
+            yaw_rad.sin(),
+            yaw_rad.cos() * pitch_rad.cos(),
+        )
+        .normalize();
 
-        let right: Deg = Deg(*pitch - 90.0f32);
+        let right_rad = deg_to_rad(pitch_deg - 90.0f32);
         // 右方向のベクトル
         let right = Vector3::new(
-            right.sin(),
+            right_rad.sin(),
             0.0f32, /* ロールは0なので常に床と水平 */
-            right.cos(),
+            right_rad.cos(),
         )
         .normalize();
 
