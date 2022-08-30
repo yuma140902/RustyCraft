@@ -19,13 +19,11 @@ mod camera_computer;
 mod chunk;
 mod mymath;
 mod player;
-mod world;
 use block::Block;
 use block_texture::BlockTextures;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
 use mymath::*;
-use world::GameWorld;
 
 use crate::player::Player;
 
@@ -43,7 +41,7 @@ struct Game<'a> {
     _image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
     block_textures: BlockTextures,
-    world: GameWorld,
+    world: Chunk,
 }
 
 impl<'a> Game<'a> {
@@ -78,7 +76,7 @@ impl<'a> Game<'a> {
         );
         let block_textures = block_texture::get_textures_in_atlas();
 
-        let world = GameWorld::new();
+        let chunk = Chunk::new(ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0)));
 
         Game {
             _engine: engine,
@@ -89,7 +87,7 @@ impl<'a> Game<'a> {
             _image_manager: image_manager,
             block_atlas_texture,
             block_textures,
-            world,
+            world: chunk,
         }
     }
 }
@@ -99,20 +97,22 @@ fn main() {
 
     let gl = &game.gl;
 
-    let chunk_zero_pos = ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0));
-    let mut chunk = Chunk::new(chunk_zero_pos);
     for i in 0..16 {
         for j in 0..16 {
-            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, 0, j).unwrap());
-            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(0, i, j).unwrap());
-            chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, j, 0).unwrap());
+            game.world
+                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, 0, j).unwrap());
+            game.world
+                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(0, i, j).unwrap());
+            game.world
+                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, j, 0).unwrap());
         }
     }
     for i in 1..15 {
-        chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, 15).unwrap());
+        game.world
+            .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, 15).unwrap());
     }
-    chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
-    game.world.add_chunk(chunk).unwrap();
+    game.world
+        .set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
 
     /* デバッグ用 */
     let depth_test = true;
@@ -143,8 +143,6 @@ fn main() {
 
     let vertex_obj = game
         .world
-        .get_chunk(&chunk_zero_pos)
-        .unwrap()
         .generate_vertex_obj(gl, &game.block_textures, &vao_config);
     println!("OK: init main VBO and VAO");
 
