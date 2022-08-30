@@ -70,32 +70,35 @@ fn main() {
     }
     world.set_block(3, 3, 3);
 
-    /* デバッグ用 */
-    let depth_test = true;
-    let blend = true;
-    let wireframe = false;
-    let culling = true;
-    let alpha: f32 = 1.0;
-    /* ベクトルではなく色 */
-    let material_specular = Vector3::new(0.2, 0.2, 0.2);
-    let material_shininess: f32 = 0.1;
-    let light_direction = Vector3::new(1.0, 1.0, 0.0);
-    /* ambient, diffuse, specular はベクトルではなく色 */
-    let ambient = Vector3::new(0.3, 0.3, 0.3);
-    let diffuse = Vector3::new(0.5, 0.5, 0.5);
-    let specular = Vector3::new(0.2, 0.2, 0.2);
-    let vao_config = VaoConfigBuilder::new(&shader)
-        .depth_test(depth_test)
-        .blend(blend)
-        .wireframe(wireframe)
-        .culling(culling)
-        .alpha(alpha)
-        .material_specular(material_specular)
-        .material_shininess(material_shininess)
-        .ambient(ambient)
-        .diffuse(diffuse)
-        .specular(specular)
-        .build();
+    let vao_config = {
+        /* デバッグ用 */
+        let depth_test = true;
+        let blend = true;
+        let wireframe = false;
+        let culling = true;
+        let alpha: f32 = 1.0;
+        /* ベクトルではなく色 */
+        let material_specular = Vector3::new(0.2, 0.2, 0.2);
+        let material_shininess: f32 = 0.1;
+        let light_direction = Vector3::new(1.0, 1.0, 0.0);
+        /* ambient, diffuse, specular はベクトルではなく色 */
+        let ambient = Vector3::new(0.3, 0.3, 0.3);
+        let diffuse = Vector3::new(0.5, 0.5, 0.5);
+        let specular = Vector3::new(0.2, 0.2, 0.2);
+        VaoConfigBuilder::new(&shader)
+            .depth_test(depth_test)
+            .blend(blend)
+            .wireframe(wireframe)
+            .culling(culling)
+            .alpha(alpha)
+            .material_specular(material_specular)
+            .material_shininess(material_shininess)
+            .light_direction(light_direction)
+            .ambient(ambient)
+            .diffuse(diffuse)
+            .specular(specular)
+            .build()
+    };
 
     let vertex_obj = world.generate_vertex_obj(&gl, &cuboid_texture, &vao_config);
 
@@ -133,17 +136,10 @@ fn main() {
             uniforms.add(c_str!("uModel"), Matrix4(&model_matrix));
             uniforms.add(c_str!("uView"), Matrix4(&view_matrix));
             uniforms.add(c_str!("uProjection"), Matrix4(&projection_matrix));
-            uniforms.add(c_str!("uAlpha"), Float(alpha));
             uniforms.add(
                 c_str!("uViewPosition"),
                 TripleFloat(camera.pos.x, camera.pos.y, camera.pos.z),
             );
-            uniforms.add(c_str!("uMaterial.specular"), Vector3(&material_specular));
-            uniforms.add(c_str!("uMaterial.shininess"), Float(material_shininess));
-            uniforms.add(c_str!("uLight.direction"), Vector3(&light_direction));
-            uniforms.add(c_str!("uLight.ambient"), Vector3(&ambient));
-            uniforms.add(c_str!("uLight.diffuse"), Vector3(&diffuse));
-            uniforms.add(c_str!("uLight.specular"), Vector3(&specular));
             uniforms
         };
 
