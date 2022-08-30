@@ -8,17 +8,14 @@ pub struct Camera {
     pub yaw_rad: f32,
 }
 
-impl Default for Camera {
-    fn default() -> Self {
+impl Camera {
+    pub fn new() -> Self {
         Self {
             pos: Point3::new(4.0, 3.6, 4.0),
             pitch_rad: deg_to_rad(225.0),
             yaw_rad: deg_to_rad(-30.0),
         }
     }
-}
-
-impl Camera {
     pub fn compute_view_matrix(&self) -> Matrix4<f32> {
         let (front, _right, up) = calc_front_right_up(self.pitch_rad, self.yaw_rad);
         Matrix4::<f32>::look_at_rh(&self.pos, &(self.pos + front), &up)

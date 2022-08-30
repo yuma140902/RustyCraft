@@ -97,7 +97,7 @@ fn main() {
 
     let vertex_obj = world.generate_vertex_obj(&gl, &cuboid_texture, &vao_config);
 
-    let camera = Camera::default();
+    let camera = Camera::new();
 
     let width = 800;
     let height = 600;
