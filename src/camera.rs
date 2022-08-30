@@ -1,6 +1,6 @@
 use nalgebra::{Matrix4, Point3, Vector3};
 
-use crate::mymath::deg_to_rad;
+use crate::deg_to_rad;
 
 pub struct Camera {
     pub pos: Point3<f32>,

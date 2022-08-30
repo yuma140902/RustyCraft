@@ -13,10 +13,8 @@ use re::VaoConfigBuilder;
 use reverie_engine as re;
 
 mod camera;
-mod mymath;
 mod world;
 use camera::Camera;
-use mymath::*;
 use world::World;
 
 #[allow(dead_code)]
@@ -25,6 +23,10 @@ type Vector3 = nalgebra::Vector3<f32>;
 type Matrix4 = nalgebra::Matrix4<f32>;
 
 pub type TextureUV = re::TextureUV<Const<64>, Const<64>, Const<256>, Const<256>>;
+
+pub fn deg_to_rad(deg: f32) -> f32 {
+    deg * std::f32::consts::PI / 180_f32
+}
 
 fn main() {
     let engine = ReverieEngine::new();
