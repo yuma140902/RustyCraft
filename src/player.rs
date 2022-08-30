@@ -5,7 +5,6 @@ use crate::mymath::deg_to_rad;
 pub struct Player {
     pub pos: Point3<f32>,
     pub angle: Angle2,
-    pub on_ground: bool,
 }
 
 impl Default for Player {
@@ -13,7 +12,6 @@ impl Default for Player {
         Self {
             pos: Point3::new(4.0, 3.6, 4.0),
             angle: Angle2::new(225.0_f32, -30.0_f32),
-            on_ground: false,
         }
     }
 }
