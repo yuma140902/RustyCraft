@@ -9,6 +9,8 @@ use re::Context;
 use re::ImageLoadInfo;
 use re::ImageManager;
 use re::ReverieEngine;
+use re::TextureAtlasPos;
+use re::TextureUV;
 use re::VaoConfigBuilder;
 use re::Window;
 use reverie_engine as re;
@@ -73,7 +75,12 @@ impl<'a> Game<'a> {
             block_atlas_texture.height,
             block_atlas_texture.gl_id
         );
-        let block_textures = block_texture::get_textures_in_atlas();
+
+        let block_textures = BlockTextures {
+            side: TextureUV::of_atlas(&TextureAtlasPos::new(0, 0)),
+            top: TextureUV::of_atlas(&TextureAtlasPos::new(0, 1)),
+            bottom: TextureUV::of_atlas(&TextureAtlasPos::new(0, 2)),
+        };
 
         let world = World::new();
 
