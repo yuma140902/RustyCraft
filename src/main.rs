@@ -56,22 +56,23 @@ fn main() {
         east: &side_texture,
     };
 
-    let mut world = World::new();
-
-    for i in 0..16 {
-        for j in 0..16 {
-            world.set_block(i, 0, j);
-            world.set_block(0, i, j);
-            world.set_block(i, j, 0);
+    let world = {
+        let mut world = World::new();
+        for i in 0..16 {
+            for j in 0..16 {
+                world.set_block(i, 0, j);
+                world.set_block(0, i, j);
+                world.set_block(i, j, 0);
+            }
         }
-    }
-    for i in 1..15 {
-        world.set_block(i, i, 15);
-    }
-    world.set_block(3, 3, 3);
+        for i in 1..15 {
+            world.set_block(i, i, 15);
+        }
+        world.set_block(3, 3, 3);
+        world
+    };
 
     let vao_config = {
-        /* デバッグ用 */
         let depth_test = true;
         let blend = true;
         let wireframe = false;
