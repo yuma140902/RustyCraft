@@ -1,27 +1,21 @@
 use std::path::Path;
 
 use re::gl;
-use re::gl::Gl;
 use re::shader::Program;
 use re::shader::Shader;
 use re::shader::UniformVariables;
-use re::Context;
-use re::ImageLoadInfo;
+use re::types::Const;
+use re::CuboidTextures;
 use re::ImageManager;
 use re::ReverieEngine;
 use re::TextureAtlasPos;
-use re::TextureUV;
 use re::VaoConfigBuilder;
-use re::Window;
 use reverie_engine as re;
 
-mod block;
-mod block_texture;
 mod camera_computer;
 mod mymath;
 mod player;
 mod world;
-use block_texture::BlockTextures;
 use camera_computer::CameraComputer;
 use mymath::*;
 use world::World;
@@ -33,87 +27,57 @@ type Point3 = nalgebra::Point3<f32>;
 type Vector3 = nalgebra::Vector3<f32>;
 type Matrix4 = nalgebra::Matrix4<f32>;
 
-struct Game<'a> {
-    _engine: ReverieEngine,
-    window: Window,
-    gl_context: Context<glutin::RawContext<glutin::PossiblyCurrent>>,
-    gl: Gl,
-    shader: Program,
-    _image_manager: ImageManager,
-    block_atlas_texture: ImageLoadInfo<'a>,
-    block_textures: BlockTextures,
-    world: World,
-}
-
-impl<'a> Game<'a> {
-    fn init() -> Game<'a> {
-        let engine = ReverieEngine::new();
-        println!("OK: init ReverieEngine");
-        let window = engine.create_window();
-        println!("OK: init window");
-        let context = window.create_context_glutin();
-        println!("OK: init glutin context");
-
-        let gl = context.gl();
-        println!("OK: init GL context");
-
-        let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
-        let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
-        let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
-        println!("OK: shader program");
-
-        let mut image_manager = ImageManager::new(gl.clone());
-        println!("OK: init ImageManager");
-        let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
-        let block_atlas_texture = image_manager
-            .load_image(image, "atlas/blocks", true)
-            .unwrap();
-        println!(
-            "OK: load {} {}x{}, #{}",
-            block_atlas_texture.id,
-            block_atlas_texture.width,
-            block_atlas_texture.height,
-            block_atlas_texture.gl_id
-        );
-
-        let block_textures = BlockTextures {
-            side: TextureUV::of_atlas(&TextureAtlasPos::new(0, 0)),
-            top: TextureUV::of_atlas(&TextureAtlasPos::new(0, 1)),
-            bottom: TextureUV::of_atlas(&TextureAtlasPos::new(0, 2)),
-        };
-
-        let world = World::new();
-
-        Game {
-            _engine: engine,
-            window,
-            gl_context: context,
-            gl,
-            shader,
-            _image_manager: image_manager,
-            block_atlas_texture,
-            block_textures,
-            world,
-        }
-    }
-}
+pub type TextureUV = re::TextureUV<Const<64>, Const<64>, Const<256>, Const<256>>;
 
 fn main() {
-    let mut game = Game::init();
+    let engine = ReverieEngine::new();
+    let mut window = engine.create_window();
+    let context = window.create_context_glutin();
+    let gl = context.gl();
 
-    let gl = &game.gl;
+    let vert_shader = Shader::from_vert_file(gl.clone(), "rsc/shader/shader.vs").unwrap();
+    let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
+    let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
+
+    let mut image_manager = ImageManager::new(gl.clone());
+    println!("OK: init ImageManager");
+    let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
+    let block_atlas_texture = image_manager
+        .load_image(image, "atlas/blocks", true)
+        .unwrap();
+    println!(
+        "OK: load {} {}x{}, #{}",
+        block_atlas_texture.id,
+        block_atlas_texture.width,
+        block_atlas_texture.height,
+        block_atlas_texture.gl_id
+    );
+
+    let top_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 1));
+    let bottom_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 2));
+    let side_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 0));
+    let cuboid_texture = CuboidTextures {
+        top: &top_texture,
+        bottom: &bottom_texture,
+        north: &side_texture,
+        south: &side_texture,
+        west: &side_texture,
+        east: &side_texture,
+    };
+
+    let mut world = World::new();
 
     for i in 0..16 {
         for j in 0..16 {
-            game.world.set_block(&BlockPos::new(i, 0, j).unwrap());
-            game.world.set_block(&BlockPos::new(0, i, j).unwrap());
-            game.world.set_block(&BlockPos::new(i, j, 0).unwrap());
+            world.set_block(&BlockPos::new(i, 0, j).unwrap());
+            world.set_block(&BlockPos::new(0, i, j).unwrap());
+            world.set_block(&BlockPos::new(i, j, 0).unwrap());
         }
     }
     for i in 1..15 {
-        game.world.set_block(&BlockPos::new(i, i, 15).unwrap());
+        world.set_block(&BlockPos::new(i, i, 15).unwrap());
     }
-    game.world.set_block(&BlockPos::new(3, 3, 3).unwrap());
+    world.set_block(&BlockPos::new(3, 3, 3).unwrap());
 
     /* デバッグ用 */
     let depth_test = true;
@@ -129,7 +93,7 @@ fn main() {
     let ambient = Vector3::new(0.3, 0.3, 0.3);
     let diffuse = Vector3::new(0.5, 0.5, 0.5);
     let specular = Vector3::new(0.2, 0.2, 0.2);
-    let vao_config = VaoConfigBuilder::new(&game.shader)
+    let vao_config = VaoConfigBuilder::new(&shader)
         .depth_test(depth_test)
         .blend(blend)
         .wireframe(wireframe)
@@ -142,9 +106,7 @@ fn main() {
         .specular(specular)
         .build();
 
-    let vertex_obj = game
-        .world
-        .generate_vertex_obj(gl, &game.block_textures, &vao_config);
+    let vertex_obj = world.generate_vertex_obj(&gl, &cuboid_texture, &vao_config);
     println!("OK: init main VBO and VAO");
 
     let player = Player::default();
@@ -157,7 +119,7 @@ fn main() {
     let height = 600;
 
     'main: loop {
-        if game.window.process_event() {
+        if window.process_event() {
             break 'main;
         }
 
@@ -200,12 +162,12 @@ fn main() {
         };
 
         unsafe {
-            gl.BindTexture(gl::TEXTURE_2D, game.block_atlas_texture.gl_id);
+            gl.BindTexture(gl::TEXTURE_2D, block_atlas_texture.gl_id);
             vertex_obj.draw_triangles(&uniforms);
             gl.BindTexture(gl::TEXTURE_2D, 0);
         }
 
-        game.gl_context.swap_buffers();
+        context.swap_buffers();
 
         std::thread::sleep(std::time::Duration::new(0, 1_000_000_000u32 / 60)); // 60FPS
     }

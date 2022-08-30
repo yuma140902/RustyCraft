@@ -1,13 +1,13 @@
 use re::gl::Gl;
+use re::CuboidTextures;
 use re::Vao;
 use re::VaoBuffer;
 use re::VaoBuilder3DGeometry;
 use re::VaoConfig;
 use reverie_engine as re;
 
-use crate::block_texture;
-use crate::block_texture::BlockTextures;
 use crate::mymath::BlockPos;
+use crate::TextureUV;
 
 pub struct World {
     blocks: Vec<bool>,
@@ -27,7 +27,7 @@ impl World {
     pub fn generate_vertex_obj<'a>(
         &self,
         gl: &Gl,
-        textures: &BlockTextures,
+        textures: &CuboidTextures<'a, TextureUV>,
         config: &'a VaoConfig,
     ) -> Vao<'a> {
         let mut buffer_builder = VaoBuffer::new();
@@ -54,11 +54,7 @@ type Vector3 = nalgebra::Vector3<f32>;
 
 const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
 
-fn add_block(builder: &mut VaoBuffer, begin: &BlockPos, textures: &BlockTextures) {
+fn add_block(builder: &mut VaoBuffer, begin: &BlockPos, textures: &CuboidTextures<'_, TextureUV>) {
     let begin = begin.cast::<f32>();
-    builder.add_cuboid(
-        &begin,
-        &(begin + BLOCK_SIZE),
-        &block_texture::generate_cuboid_texture(textures),
-    );
+    builder.add_cuboid(&begin, &(begin + BLOCK_SIZE), &textures);
 }
