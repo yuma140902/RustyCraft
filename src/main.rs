@@ -16,14 +16,14 @@ use reverie_engine as re;
 mod block;
 mod block_texture;
 mod camera_computer;
-mod chunk;
 mod mymath;
 mod player;
+mod world;
 use block::Block;
 use block_texture::BlockTextures;
 use camera_computer::CameraComputer;
-use chunk::Chunk;
 use mymath::*;
+use world::World;
 
 use crate::player::Player;
 
@@ -41,7 +41,7 @@ struct Game<'a> {
     _image_manager: ImageManager,
     block_atlas_texture: ImageLoadInfo<'a>,
     block_textures: BlockTextures,
-    world: Chunk,
+    world: World,
 }
 
 impl<'a> Game<'a> {
@@ -76,7 +76,7 @@ impl<'a> Game<'a> {
         );
         let block_textures = block_texture::get_textures_in_atlas();
 
-        let chunk = Chunk::new(ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0)));
+        let chunk = World::new(ChunkPos::new(nalgebra::Point3::<i32>::new(0, 0, 0)));
 
         Game {
             _engine: engine,

@@ -12,14 +12,14 @@ use crate::mymath::BlockPosInChunk;
 use crate::mymath::BlockPosInWorld;
 use crate::mymath::ChunkPos;
 
-pub struct Chunk {
+pub struct World {
     blocks: Vec<Option<Block>>,
     position: ChunkPos,
 }
 
-impl Chunk {
-    pub fn new(position: ChunkPos) -> Chunk {
-        Chunk {
+impl World {
+    pub fn new(position: ChunkPos) -> World {
+        World {
             blocks: std::iter::repeat_with(|| None).take(16 * 16 * 16).collect(),
             position,
         }
