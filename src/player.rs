@@ -1,12 +1,10 @@
 use nalgebra::{Point3, Vector3};
-use parry3d::shape::Cuboid;
 
 use crate::mymath::deg_to_rad;
 
 pub struct Player {
     pub pos: Point3<f32>,
     pub angle: Angle2,
-    pub collider: Cuboid,
     pub on_ground: bool,
 }
 
@@ -15,7 +13,6 @@ impl Default for Player {
         Self {
             pos: Point3::new(4.0, 3.6, 4.0),
             angle: Angle2::new(225.0_f32, -30.0_f32),
-            collider: Cuboid::new(Vector3::new(0.15, 0.45, 0.15)),
             on_ground: false,
         }
     }
