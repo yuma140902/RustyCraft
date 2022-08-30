@@ -12,11 +12,9 @@ use re::TextureAtlasPos;
 use re::VaoConfigBuilder;
 use reverie_engine as re;
 
-mod camera_computer;
 mod mymath;
 mod player;
 mod world;
-use camera_computer::CameraComputer;
 use mymath::*;
 use world::World;
 
@@ -102,8 +100,6 @@ fn main() {
 
     let player = Player::default();
 
-    let camera = CameraComputer::new();
-
     let width = 800;
     let height = 600;
 
@@ -121,7 +117,7 @@ fn main() {
 
         let model_matrix =
             nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
-        let view_matrix = camera.compute_view_matrix(&player);
+        let view_matrix = player.compute_view_matrix();
         let projection_matrix: Matrix4 = Matrix4::new_perspective(
             width as f32 / height as f32,
             deg_to_rad(45.0f32),
