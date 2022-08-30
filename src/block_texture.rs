@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::block::{Block, Side};
+use crate::block::Side;
 
 use re::types::Const;
 use re::CuboidTextures;
@@ -29,38 +29,23 @@ pub fn get_textures_in_atlas() -> BlockTextures {
 }
 
 // TODO: jsonで宣言したり、luaで計算したりさせたい
-pub fn get_texture_name(block: &Block, side: Side) -> &str {
-    match block {
-        Block::GrassBlock => match side {
-            Side::TOP => "grass_top",
-            Side::BOTTOM => "grass_bottom",
-            _ => "grass_side",
-        },
+pub fn get_texture_name(side: Side) -> &'static str {
+    match side {
+        Side::TOP => "grass_top",
+        Side::BOTTOM => "grass_bottom",
+        _ => "grass_side",
     }
 }
 
 pub fn generate_cuboid_texture<'a>(
-    block: &Block,
     block_textures: &'a BlockTextures,
 ) -> CuboidTextures<'a, TextureUV<Const<64>, Const<64>, Const<256>, Const<256>>> {
     CuboidTextures {
-        top: block_textures
-            .get(get_texture_name(block, Side::TOP))
-            .unwrap(),
-        bottom: block_textures
-            .get(get_texture_name(block, Side::BOTTOM))
-            .unwrap(),
-        south: block_textures
-            .get(get_texture_name(block, Side::SOUTH))
-            .unwrap(),
-        north: block_textures
-            .get(get_texture_name(block, Side::NORTH))
-            .unwrap(),
-        west: block_textures
-            .get(get_texture_name(block, Side::WEST))
-            .unwrap(),
-        east: block_textures
-            .get(get_texture_name(block, Side::EAST))
-            .unwrap(),
+        top: block_textures.get(get_texture_name(Side::TOP)).unwrap(),
+        bottom: block_textures.get(get_texture_name(Side::BOTTOM)).unwrap(),
+        south: block_textures.get(get_texture_name(Side::SOUTH)).unwrap(),
+        north: block_textures.get(get_texture_name(Side::NORTH)).unwrap(),
+        west: block_textures.get(get_texture_name(Side::WEST)).unwrap(),
+        east: block_textures.get(get_texture_name(Side::EAST)).unwrap(),
     }
 }

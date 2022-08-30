@@ -19,7 +19,6 @@ mod camera_computer;
 mod mymath;
 mod player;
 mod world;
-use block::Block;
 use block_texture::BlockTextures;
 use camera_computer::CameraComputer;
 use mymath::*;
@@ -99,20 +98,15 @@ fn main() {
 
     for i in 0..16 {
         for j in 0..16 {
-            game.world
-                .set_block(&Block::GrassBlock, &BlockPos::new(i, 0, j).unwrap());
-            game.world
-                .set_block(&Block::GrassBlock, &BlockPos::new(0, i, j).unwrap());
-            game.world
-                .set_block(&Block::GrassBlock, &BlockPos::new(i, j, 0).unwrap());
+            game.world.set_block(&BlockPos::new(i, 0, j).unwrap());
+            game.world.set_block(&BlockPos::new(0, i, j).unwrap());
+            game.world.set_block(&BlockPos::new(i, j, 0).unwrap());
         }
     }
     for i in 1..15 {
-        game.world
-            .set_block(&Block::GrassBlock, &BlockPos::new(i, i, 15).unwrap());
+        game.world.set_block(&BlockPos::new(i, i, 15).unwrap());
     }
-    game.world
-        .set_block(&Block::GrassBlock, &BlockPos::new(3, 3, 3).unwrap());
+    game.world.set_block(&BlockPos::new(3, 3, 3).unwrap());
 
     /* デバッグ用 */
     let depth_test = true;
