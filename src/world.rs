@@ -9,8 +9,6 @@ use crate::block::Block;
 use crate::block_texture;
 use crate::block_texture::BlockTextures;
 use crate::mymath::BlockPosInChunk;
-use crate::mymath::BlockPosInWorld;
-use crate::mymath::ChunkPos;
 
 pub struct World {
     blocks: Vec<Option<Block>>,
