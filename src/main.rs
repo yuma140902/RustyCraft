@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use c_str_macro::c_str;
 use re::gl;
 use re::shader::Program;
@@ -136,7 +134,6 @@ fn main() {
         );
 
         let uniforms = {
-            use c_str_macro::c_str;
             use re::shader::Uniform::*;
             let mut uniforms = UniformVariables::new();
             uniforms.add(c_str!("uModel"), Matrix4(&model_matrix));
