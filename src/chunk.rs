@@ -8,11 +8,11 @@ use re::VaoConfig;
 use reverie_engine as re;
 
 use crate::block::Block;
+use crate::block_texture;
+use crate::block_texture::BlockTextures;
 use crate::mymath::BlockPosInChunk;
 use crate::mymath::BlockPosInWorld;
 use crate::mymath::ChunkPos;
-use crate::texture::block_texture;
-use crate::texture::block_texture::BlockTextures;
 
 pub struct Chunk {
     blocks: Vec<Option<Block>>,

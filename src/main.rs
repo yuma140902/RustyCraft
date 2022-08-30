@@ -14,20 +14,19 @@ use re::Window;
 use reverie_engine as re;
 
 pub mod block;
+pub mod block_texture;
 pub mod camera_computer;
 pub mod chunk;
 mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
 mod player;
-pub mod texture;
 pub mod world;
 use block::Block;
+use block_texture::BlockTextures;
 use camera_computer::CameraComputer;
 use chunk::Chunk;
 use mymath::*;
-use texture::block_texture;
-use texture::block_texture::BlockTextures;
 use world::GameWorld;
 
 use crate::player::Player;
