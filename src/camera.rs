@@ -1,7 +1,5 @@
 use nalgebra::{Matrix4, Point3, Vector3};
 
-use crate::deg_to_rad;
-
 pub struct Camera {
     pub pos: Point3<f32>,
     pub pitch_rad: f32,
@@ -16,9 +14,19 @@ impl Camera {
             yaw_rad: deg_to_rad(-30.0),
         }
     }
-    pub fn compute_view_matrix(&self) -> Matrix4<f32> {
+
+    pub fn view_matrix(&self) -> Matrix4<f32> {
         let (front, _right, up) = calc_front_right_up(self.pitch_rad, self.yaw_rad);
         Matrix4::<f32>::look_at_rh(&self.pos, &(self.pos + front), &up)
+    }
+
+    pub fn projection_matrix(&self, width: u32, height: u32) -> Matrix4<f32> {
+        Matrix4::new_perspective(
+            width as f32 / height as f32,
+            deg_to_rad(45.0f32),
+            0.1,
+            100.0,
+        )
     }
 }
 
@@ -43,4 +51,8 @@ fn calc_front_right_up(pitch_rad: f32, yaw_rad: f32) -> (Vector3<f32>, Vector3<f
     let up = right.cross(&front);
 
     (front, right, up)
+}
+
+fn deg_to_rad(deg: f32) -> f32 {
+    deg * std::f32::consts::PI / 180_f32
 }

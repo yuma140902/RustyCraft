@@ -23,10 +23,6 @@ type Matrix4 = nalgebra::Matrix4<f32>;
 
 pub type TextureUV = re::TextureUV<Const<64>, Const<64>, Const<256>, Const<256>>;
 
-pub fn deg_to_rad(deg: f32) -> f32 {
-    deg * std::f32::consts::PI / 180_f32
-}
-
 fn main() {
     let engine = ReverieEngine::new();
     let mut window = engine.create_window();
@@ -123,15 +119,12 @@ fn main() {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let model_matrix =
-            nalgebra_glm::scale(&Matrix4::identity(), &Vector3::new(0.5f32, 0.5f32, 0.5f32));
-        let view_matrix = camera.compute_view_matrix();
-        let projection_matrix: Matrix4 = Matrix4::new_perspective(
-            width as f32 / height as f32,
-            deg_to_rad(45.0f32),
-            0.1,
-            100.0,
+        let model_matrix = nalgebra_glm::scale(
+            &Matrix4::identity(),
+            &Vector3::new(0.5_f32, 0.5_f32, 0.5_f32),
         );
+        let view_matrix = camera.view_matrix();
+        let projection_matrix: Matrix4 = camera.projection_matrix(width, height);
 
         let uniforms = {
             use re::shader::Uniform::*;
