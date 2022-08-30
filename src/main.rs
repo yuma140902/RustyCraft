@@ -100,19 +100,19 @@ fn main() {
     for i in 0..16 {
         for j in 0..16 {
             game.world
-                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, 0, j).unwrap());
+                .set_block(&Block::GrassBlock, &BlockPos::new(i, 0, j).unwrap());
             game.world
-                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(0, i, j).unwrap());
+                .set_block(&Block::GrassBlock, &BlockPos::new(0, i, j).unwrap());
             game.world
-                .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, j, 0).unwrap());
+                .set_block(&Block::GrassBlock, &BlockPos::new(i, j, 0).unwrap());
         }
     }
     for i in 1..15 {
         game.world
-            .set_block(&Block::GrassBlock, &BlockPosInChunk::new(i, i, 15).unwrap());
+            .set_block(&Block::GrassBlock, &BlockPos::new(i, i, 15).unwrap());
     }
     game.world
-        .set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
+        .set_block(&Block::GrassBlock, &BlockPos::new(3, 3, 3).unwrap());
 
     /* デバッグ用 */
     let depth_test = true;

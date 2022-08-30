@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use nalgebra::Point3;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct BlockPosInChunk(nalgebra::Point3<u32>);
+pub struct BlockPos(nalgebra::Point3<u32>);
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Deg(pub f32);
@@ -11,7 +11,7 @@ pub struct Deg(pub f32);
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Rad(pub f32);
 
-impl BlockPosInChunk {
+impl BlockPos {
     pub fn new(x: u32, y: u32, z: u32) -> Option<Self> {
         if x < 16 && y < 16 && z < 16 {
             Some(Self {
@@ -26,7 +26,7 @@ impl BlockPosInChunk {
         (16 * 16 * self.y + 16 * self.z + self.x) as usize
     }
 }
-impl Deref for BlockPosInChunk {
+impl Deref for BlockPos {
     type Target = Point3<u32>;
 
     fn deref(&self) -> &Self::Target {
