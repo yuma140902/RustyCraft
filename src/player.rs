@@ -13,8 +13,8 @@ pub struct Player {
 impl Default for Player {
     fn default() -> Self {
         Self {
-            pos: Point3::new(4.0, 2.5, 4.0),
-            angle: Angle2::new(225.0_f32, 0.0_f32),
+            pos: Point3::new(4.0, 3.6, 4.0),
+            angle: Angle2::new(225.0_f32, -30.0_f32),
             collider: Cuboid::new(Vector3::new(0.15, 0.45, 0.15)),
             on_ground: false,
         }
