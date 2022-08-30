@@ -69,10 +69,6 @@ impl BlockPosInWorld {
 
         return Self::new(block_pos + chunk_pos);
     }
-
-    pub fn inner(&self) -> Point3<i32> {
-        self.0
-    }
 }
 impl Deref for BlockPosInWorld {
     type Target = Point3<i32>;
@@ -113,11 +109,6 @@ impl DerefMut for Deg {
     }
 }
 
-impl Rad {
-    pub fn deg(&self) -> Deg {
-        Deg(self.0 * 180f32 / std::f32::consts::PI)
-    }
-}
 impl Deref for Rad {
     type Target = f32;
 

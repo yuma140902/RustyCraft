@@ -23,23 +23,14 @@ impl Default for Player {
 
 #[derive(Debug)]
 pub struct Angle2 {
-    pitch: Deg,
-    yaw: Deg,
     front: Vector3<f32>,
-    right: Vector3<f32>,
     up: Vector3<f32>,
 }
 
 impl Angle2 {
     pub fn new(pitch: Deg, yaw: Deg) -> Self {
-        let (front, right, up) = Self::calc_front_right_up(pitch, yaw);
-        Self {
-            pitch,
-            yaw,
-            front,
-            right,
-            up,
-        }
+        let (front, _right, up) = Self::calc_front_right_up(pitch, yaw);
+        Self { front, up }
     }
 
     fn calc_front_right_up(pitch: Deg, yaw: Deg) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
