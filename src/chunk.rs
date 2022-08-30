@@ -1,5 +1,3 @@
-use parry3d::bounding_volume::AABB;
-
 use re::gl::Gl;
 use re::Vao;
 use re::VaoBuffer;
@@ -35,28 +33,6 @@ impl Chunk {
         let _old = std::mem::replace(&mut self.blocks[pos.index()], Some(*block));
     }
 
-    pub fn get_block(&self, pos: &BlockPosInChunk) -> Option<Block> {
-        self.blocks[pos.index()]
-    }
-
-    pub fn aabbs_for_collision(&self) -> Vec<AABB> {
-        let mut vec = Vec::<AABB>::new();
-        /* ToDo: BlockPosInChunk のイテレータ */
-        for x in 0..16 {
-            for y in 0..16 {
-                for z in 0..16 {
-                    let pos = BlockPosInChunk::new(x, y, z).unwrap();
-                    let index = pos.index();
-                    if let Some(block) = self.blocks[index] {
-                        let pos_in_world = BlockPosInWorld::from_chunk_pos(self.position(), &pos);
-                        vec.append(&mut crate::block::get_block_aabbs(&block, &pos_in_world));
-                    }
-                }
-            }
-        }
-        vec
-    }
-
     pub fn generate_vertex_obj<'a>(
         &self,
         gl: &Gl,
@@ -90,13 +66,6 @@ impl Chunk {
 }
 
 type Vector3 = nalgebra::Vector3<f32>;
-
-pub const UP: Vector3 = Vector3::new(0.0, 1.0, 0.0);
-pub const DOWN: Vector3 = Vector3::new(0.0, -1.0, 0.0);
-pub const NORTH: Vector3 = Vector3::new(1.0, 0.0, 0.0);
-pub const SOUTH: Vector3 = Vector3::new(-1.0, 0.0, 0.0);
-pub const WEST: Vector3 = Vector3::new(0.0, 0.0, 1.0);
-pub const EAST: Vector3 = Vector3::new(0.0, 0.0, -1.0);
 
 const BLOCK_SIZE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
 

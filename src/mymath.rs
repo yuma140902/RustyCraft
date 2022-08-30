@@ -10,7 +10,6 @@ pub struct ChunkPos(nalgebra::Point3<i32>);
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct BlockPosInWorld(nalgebra::Point3<i32>);
-pub type BlockPos = BlockPosInWorld;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Deg(pub f32);

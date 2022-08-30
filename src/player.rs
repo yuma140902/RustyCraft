@@ -42,15 +42,6 @@ impl Angle2 {
         }
     }
 
-    pub fn set(&mut self, pitch: Deg, yaw: Deg) {
-        let (front, right, up) = Self::calc_front_right_up(pitch, yaw);
-        self.pitch = pitch;
-        self.yaw = yaw;
-        self.front = front;
-        self.right = right;
-        self.up = up;
-    }
-
     fn calc_front_right_up(pitch: Deg, yaw: Deg) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>) {
         let front =
             Vector3::new(yaw.cos() * pitch.sin(), yaw.sin(), yaw.cos() * pitch.cos()).normalize();
@@ -70,20 +61,8 @@ impl Angle2 {
         (front, right, up)
     }
 
-    pub fn pitch(&self) -> &Deg {
-        &self.pitch
-    }
-
-    pub fn yaw(&self) -> &Deg {
-        &self.yaw
-    }
-
     pub fn front(&self) -> &Vector3<f32> {
         &self.front
-    }
-
-    pub fn right(&self) -> &Vector3<f32> {
-        &self.right
     }
 
     pub fn up(&self) -> &Vector3<f32> {

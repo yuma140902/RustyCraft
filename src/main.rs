@@ -17,7 +17,6 @@ mod block;
 mod block_texture;
 mod camera_computer;
 mod chunk;
-mod game_config;
 mod mymath;
 mod player;
 mod world;
