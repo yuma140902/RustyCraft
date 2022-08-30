@@ -61,15 +61,15 @@ fn main() {
 
     for i in 0..16 {
         for j in 0..16 {
-            world.set_block(&BlockPos::new(i, 0, j).unwrap());
-            world.set_block(&BlockPos::new(0, i, j).unwrap());
-            world.set_block(&BlockPos::new(i, j, 0).unwrap());
+            world.set_block(i, 0, j);
+            world.set_block(0, i, j);
+            world.set_block(i, j, 0);
         }
     }
     for i in 1..15 {
-        world.set_block(&BlockPos::new(i, i, 15).unwrap());
+        world.set_block(i, i, 15);
     }
-    world.set_block(&BlockPos::new(3, 3, 3).unwrap());
+    world.set_block(3, 3, 3);
 
     /* デバッグ用 */
     let depth_test = true;
