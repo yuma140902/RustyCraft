@@ -17,7 +17,6 @@ pub mod block;
 pub mod block_texture;
 pub mod camera_computer;
 pub mod chunk;
-mod ecs_resources;
 pub mod game_config;
 pub mod mymath;
 mod player;
