@@ -38,11 +38,13 @@ fn main() {
     let frag_shader = Shader::from_frag_file(gl.clone(), "rsc/shader/shader.fs").unwrap();
     let shader = Program::from_shaders(gl.clone(), &[vert_shader, frag_shader]).unwrap();
 
-    let mut image_manager = ImageManager::new(gl.clone());
-    let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
-    let block_atlas_texture = image_manager
-        .load_image(image, "atlas/blocks", true)
-        .unwrap();
+    let block_atlas_texture = {
+        let mut image_manager = ImageManager::new(gl.clone());
+        let image = image::open(Path::new("rsc/image/atlas/blocks.png")).unwrap();
+        image_manager
+            .load_image(image, "atlas/blocks", true)
+            .unwrap()
+    };
 
     let top_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 1));
     let bottom_texture = TextureUV::of_atlas(&TextureAtlasPos::new(0, 2));
