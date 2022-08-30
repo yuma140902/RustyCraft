@@ -107,11 +107,7 @@ fn main() {
     let width = 800;
     let height = 600;
 
-    'main: loop {
-        if window.process_event() {
-            break 'main;
-        }
-
+    while !window.process_event() {
         unsafe {
             gl.Viewport(0, 0, width as i32, height as i32);
 
