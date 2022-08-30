@@ -118,20 +118,6 @@ fn main() {
     chunk.set_block(&Block::GrassBlock, &BlockPosInChunk::new(3, 3, 3).unwrap());
     game.world.add_chunk(chunk).unwrap();
 
-    let vao_config = VaoConfigBuilder::new(&game.shader).build();
-    let vertex_obj = game
-        .world
-        .get_chunk(&chunk_zero_pos)
-        .unwrap()
-        .generate_vertex_obj(gl, &game.block_textures, &vao_config);
-    println!("OK: init main VBO and VAO");
-
-    let player = Player::default();
-    println!("OK: spawn player");
-
-    let camera = CameraComputer::new();
-    println!("OK: init camera computer");
-
     /* デバッグ用 */
     let depth_test = true;
     let blend = true;
@@ -146,6 +132,31 @@ fn main() {
     let ambient = Vector3::new(0.3, 0.3, 0.3);
     let diffuse = Vector3::new(0.5, 0.5, 0.5);
     let specular = Vector3::new(0.2, 0.2, 0.2);
+    let vao_config = VaoConfigBuilder::new(&game.shader)
+        .depth_test(depth_test)
+        .blend(blend)
+        .wireframe(wireframe)
+        .culling(culling)
+        .alpha(alpha)
+        .material_specular(material_specular)
+        .material_shininess(material_shininess)
+        .ambient(ambient)
+        .diffuse(diffuse)
+        .specular(specular)
+        .build();
+
+    let vertex_obj = game
+        .world
+        .get_chunk(&chunk_zero_pos)
+        .unwrap()
+        .generate_vertex_obj(gl, &game.block_textures, &vao_config);
+    println!("OK: init main VBO and VAO");
+
+    let player = Player::default();
+    println!("OK: spawn player");
+
+    let camera = CameraComputer::new();
+    println!("OK: init camera computer");
 
     let width = 800;
     let height = 600;
@@ -153,33 +164,6 @@ fn main() {
     'main: loop {
         if game.window.process_event() {
             break 'main;
-        }
-
-        unsafe {
-            if depth_test {
-                gl.Enable(gl::DEPTH_TEST);
-            } else {
-                gl.Disable(gl::DEPTH_TEST);
-            }
-
-            if blend {
-                gl.Enable(gl::BLEND);
-                gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-            } else {
-                gl.Disable(gl::BLEND);
-            }
-
-            if wireframe {
-                gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            } else {
-                gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-            }
-
-            if culling {
-                gl.Enable(gl::CULL_FACE);
-            } else {
-                gl.Disable(gl::CULL_FACE);
-            }
         }
 
         unsafe {
